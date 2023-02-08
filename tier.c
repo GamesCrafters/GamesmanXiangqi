@@ -7,9 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Settings */
-static const int END_GAME_PIECES_MAX = 3;
-
 /**
  * Tier Hash Format:
  *     [REMAINING_PIECES]_[RED_PAWN_ROWS]_[BLACK_PAWN_ROWS]
@@ -44,40 +41,7 @@ static const int END_GAME_PIECES_MAX = 3;
 #define CHOOSE_ROWS 91
 #define CHOOSE_COLS 6
 static uint64_t choose[CHOOSE_ROWS][CHOOSE_COLS];
-
-/* Max number of remaining pieces of each type. */
-static const char *REM_MAX = "222255222222";
-
-/* Statistics */
-typedef struct TierStat {
-    uint64_t maxTierSize;
-    uint64_t tierSizeTotal;
-    uint64_t tierCount96GiB;
-    uint64_t tierCount384GiB;
-    uint64_t tierCount1536GiB;
-    uint64_t tierCountIgnored;
-} tier_stat_t;
-
-static uint64_t maxTierSize = 0ULL;
-static uint64_t tierSizeTotal = 0ULL;
-static uint64_t tierCount96GiB = 0ULL;
-static uint64_t tierCount384GiB = 0ULL;
-static uint64_t tierCount1536GiB = 0ULL;
-static uint64_t tierCountIgnored = 0ULL;
-
-static uint64_t safe_add_uint64(uint64_t lhs, uint64_t rhs) {
-    if (!lhs || !rhs || lhs > UINT64_MAX - rhs) {
-        return 0;
-    }
-    return lhs + rhs;
-}
-
-static uint64_t safe_mult_uint64(uint64_t lhs, uint64_t rhs) {
-    if (!lhs || !rhs || lhs > UINT64_MAX / rhs) {
-        return 0;
-    }
-    return lhs * rhs;
-}
+static bool chooseInitialized = false;
 
 static void make_triangle(void) {
     int i, j;
@@ -230,6 +194,21 @@ TierList *child_tiers(const char *tier) {
 }
 
 /**
+ * @brief Returns the number of child tiers of TIER.
+ */
+uint8_t tier_num_child_tiers(const char *tier) {
+    TierList *list = child_tiers(tier);
+    uint8_t n = 0;
+    TierList *walker = list;
+    while (walker) {
+        ++n;
+        walker = walker->next;
+    }
+    free_tier_list(list);
+    return n;
+}
+
+/**
  * @brief Returns the number of rearrangements of pieces at
  * tier size calculation step STEP.
  * The calculation of tier size is divided into 20 steps.
@@ -254,6 +233,10 @@ static uint64_t tier_size_step(const char *tier, int step) {
     int blackPawnTotal = tier[BLACK_P_IDX] - '0';
     int redPawnRow = 0, blackPawnRow = 0;
     int i;
+    if (!chooseInitialized){
+        make_triangle();
+        chooseInitialized = true;
+    }
     switch (step) {
     case 0: case 1: // King and advisors.
         switch (tier[RED_A_IDX + step]) {
@@ -342,401 +325,3 @@ uint64_t tier_size(const char *tier) {
     }
     return size;
 }
-
-static void tally(char *tier) {
-    uint64_t size = tier_size(tier);
-    /* Start counter at 1 since 0ULL is reserved for error.
-       When calculations are done, an error has occurred
-       if this value is 0ULL. Otherwise, decrement this counter
-       to get the actual value. */
-    uint64_t childSizeTotal = 1ULL;
-    uint64_t childSizeMax = 0ULL;
-    uint64_t mem;
-    bool overflow = false;
-    bool feasible = false;
-
-    TierList *childTiers = child_tiers(tier);
-    printf("child tiers: ");
-    for (struct TierListElem *curr = childTiers; curr; curr = curr->next) {
-        printf("%s ", curr->tier);
-        uint64_t currChildSize = tier_size(curr->tier);
-        childSizeTotal = safe_add_uint64(childSizeTotal, currChildSize);
-        if (currChildSize > childSizeMax) {
-            childSizeMax = currChildSize;
-        }
-    }
-    printf("\n");
-    free_tier_list(childTiers);
-
-    if (size == 0ULL || childSizeTotal == 0ULL) {
-        overflow = true;
-        ++tierCountIgnored;
-    } else {
-        /* memory needed = 16*childSizeTotal + 19*size. */
-        mem = safe_add_uint64(
-                    safe_mult_uint64(19ULL, size),
-                    safe_mult_uint64(16ULL, childSizeTotal)
-                    );
-        if (mem == 0ULL) {
-            overflow = true;
-            ++tierCountIgnored;
-            /* We initialized childSizeTotal to 1, so we need to fix the calculation. */
-        } else if ( (mem -= 16ULL) < (96ULL*(1ULL << 30)) ) { // fits in 96 GiB
-            ++tierCount96GiB;
-            feasible = true;
-        } else if ( mem < (384ULL*(1ULL << 30)) ) { // fits in 384 GiB
-            ++tierCount384GiB;
-            feasible = true;
-        } else if ( mem < (1536ULL*(1ULL << 30)) ) { // fits in 1536 GiB
-            ++tierCount1536GiB;
-            feasible = true;
-        } else {
-            ++tierCountIgnored;
-        }
-    }
-
-    /* Update global tier counters only if we decide to solve current tier. */
-    if (feasible) {
-        if (size > maxTierSize) {
-            maxTierSize = size;
-        }
-        tierSizeTotal += size;
-    }
-
-    /* Print out details only if the list is short. */
-    if (END_GAME_PIECES_MAX < 4) {
-        if (overflow) {
-            printf("%s: overflow\n\n", tier);
-        } else {
-            /* We initialized childSizeTotal to 1, so we need to decrement it. */
-            printf("%s: size == %"PRIu64", max child tier size == %"PRIu64","
-                   " child tiers size total == %"PRIu64", MEM == %"PRIu64"B\n\n",
-                   tier, size, childSizeMax, --childSizeTotal, mem);
-        }
-    } else {
-        (void)overflow; // suppress unused variable warning.
-    }
-}
-
-static void append_black_pawns(char *tier) {
-    int begin = 14 + tier[RED_P_IDX] - '0';
-    int nump = tier[BLACK_P_IDX] - '0';
-    tier[begin - 1] = '_';
-    for (int i = 0; i < nump; ++i) {
-        tier[begin + i] = '0';
-    }
-    tier[begin + nump] = '\0';
-    while (true) {
-        tally(tier);
-        /* Go to next combination. */
-        int i = begin;
-        ++tier[begin];
-        while (tier[i] > '6' && i < begin + nump) {
-            ++tier[++i];
-        }
-        if (i == begin + nump) {
-            break;
-        }
-        for (int j = begin; j < i; ++j) {
-            tier[j] = tier[i];
-        }
-    }
-}
-
-static void append_red_pawns(char *tier) {
-    tier[12] = '_';
-    int numP = tier[RED_P_IDX] - '0';
-    for (int i = 0; i < numP; ++i) {
-        tier[13 + i] = '0';
-    }
-    while (true) {
-        append_black_pawns(tier);
-        /* Go to next combination. */
-        int i = 13;
-        ++tier[13];
-        while (tier[i] > '6' && i < 13 + numP) {
-            ++tier[++i];
-        }
-        if (i == 13 + numP) {
-            break;
-        }
-        for (int j = 13; j < i; ++j) {
-            tier[j] = tier[i];
-        }
-    }
-}
-
-static void generate_tiers(char *tier) {
-    /* Do not include tiers that exceed maximum
-       number of pieces on board. */
-    int count = 0;
-    for (int i = 0; i < 12; ++i) {
-        count += tier[i] - '0';
-    }
-    /* Do not consider tiers that have more pieces
-       than allowed on the board. */
-    if (count > END_GAME_PIECES_MAX) return;
-    append_red_pawns(tier);
-}
-
-static void next_rem(char *tier) {
-    int i = 0;
-    ++tier[0];
-    while (tier[i] > REM_MAX[i]) {
-        /* Carry. */
-        tier[i++] = '0';
-        if (i == 12) break;
-        ++tier[i];
-    }
-}
-
-void tier_driver(void) {
-    make_triangle();
-    char tier[TIER_STR_LENGTH_MAX] = "000000000000"; // 12 digits.
-    // 3^10 * 6^2 = 2125764 possible sets of remaining pieces on the board.
-    for (int i = 0; i < 2125764; ++i) {
-        generate_tiers(tier);
-        next_rem(tier);
-    }
-    printf("total solvable tiers with a maximum of %d pieces: %"PRIu64"\n",
-           END_GAME_PIECES_MAX, tierCount96GiB+tierCount384GiB+tierCount1536GiB);
-    printf("number of tiers that fit in 96 GiB memory: %"PRIu64"\n", tierCount96GiB);
-    printf("number of tiers that fit in 384 GiB memory: %"PRIu64"\n", tierCount384GiB);
-    printf("number of tiers that fit in 1536 GiB memory: %"PRIu64"\n", tierCount1536GiB);
-    printf("number of tiers ignored: %"PRIu64"\n", tierCountIgnored);
-    printf("max solvable tier size: %"PRIu64"\n", maxTierSize);
-    /* Although in theory, this tierSizeTotal value could overflow, but it's unlikely.
-       Not checking for now. */
-    printf("total size of all solvable tiers: %"PRIu64"\n", tierSizeTotal);
-}
-
-/* ------------------------------- Multithreaded Implementation -------------------------------------*/
-
-static void tally_multithread(char *tier, tier_stat_t *stat) {
-    uint64_t size = tier_size(tier);
-    /* Start counter at 1 since 0ULL is reserved for error.
-       When calculations are done, an error has occurred
-       if this value is 0ULL. Otherwise, decrement this counter
-       to get the actual value. */
-    uint64_t childSizeTotal = 1ULL;
-    uint64_t childSizeMax = 0ULL;
-    uint64_t mem;
-    bool overflow = false;
-    bool feasible = false;
-
-    TierList *childTiers = child_tiers(tier);
-    for (struct TierListElem *curr = childTiers; curr; curr = curr->next) {
-        uint64_t currChildSize = tier_size(curr->tier);
-        childSizeTotal = safe_add_uint64(childSizeTotal, currChildSize);
-        if (currChildSize > childSizeMax) {
-            childSizeMax = currChildSize;
-        }
-    }
-    free_tier_list(childTiers);
-
-    if (size == 0ULL || childSizeTotal == 0ULL) {
-        overflow = true;
-        ++stat->tierCountIgnored;
-    } else {
-        /* memory needed = 16*childSizeTotal + 19*size. */
-        mem = safe_add_uint64(
-                    safe_mult_uint64(19ULL, size),
-                    safe_mult_uint64(16ULL, childSizeTotal)
-                    );
-        if (mem == 0ULL) {
-            overflow = true;
-            ++stat->tierCountIgnored;
-            /* We initialized childSizeTotal to 1, so we need to fix the calculation. */
-        } else if ( (mem -= 16ULL) < (96ULL*(1ULL << 30)) ) { // fits in 96 GiB
-            ++stat->tierCount96GiB;
-            feasible = true;
-        } else if ( mem < (384ULL*(1ULL << 30)) ) { // fits in 384 GiB
-            ++stat->tierCount384GiB;
-            feasible = true;
-        } else if ( mem < (1536ULL*(1ULL << 30)) ) { // fits in 1536 GiB
-            ++stat->tierCount1536GiB;
-            feasible = true;
-        } else {
-            ++stat->tierCountIgnored;
-        }
-    }
-
-    /* Update global tier counters only if we decide to solve current tier. */
-    if (feasible) {
-        if (size > stat->maxTierSize) {
-            stat->maxTierSize = size;
-        }
-        stat->tierSizeTotal += size;
-    }
-
-    /* Print out details only if the list is short. */
-    if (END_GAME_PIECES_MAX < 4) {
-        if (overflow) {
-            printf("%s: overflow\n", tier);
-        } else {
-            /* We initialized childSizeTotal to 1, so we need to decrement it. */
-            printf("%s: size == %"PRIu64", max child tier size == %"PRIu64","
-                   " child tiers size total == %"PRIu64", MEM == %"PRIu64"B\n",
-                   tier, size, childSizeMax, --childSizeTotal, mem);
-        }
-    } else {
-        (void)overflow; // suppress unused variable warning.
-    }
-}
-
-static void append_black_pawns_multithread(char *tier, tier_stat_t *stat) {
-    int begin = 14 + tier[RED_P_IDX] - '0';
-    int nump = tier[BLACK_P_IDX] - '0';
-    tier[begin - 1] = '_';
-    for (int i = 0; i < nump; ++i) {
-        tier[begin + i] = '0';
-    }
-    tier[begin + nump] = '\0';
-    while (true) {
-        tally_multithread(tier, stat);
-        /* Go to next combination. */
-        int i = begin;
-        ++tier[begin];
-        while (tier[i] > '6' && i < begin + nump) {
-            ++tier[++i];
-        }
-        if (i == begin + nump) {
-            break;
-        }
-        for (int j = begin; j < i; ++j) {
-            tier[j] = tier[i];
-        }
-    }
-}
-
-static void append_red_pawns_multithread(char *tier, tier_stat_t *stat) {
-    tier[12] = '_';
-    int numP = tier[RED_P_IDX] - '0';
-    for (int i = 0; i < numP; ++i) {
-        tier[13 + i] = '0';
-    }
-    while (true) {
-        append_black_pawns_multithread(tier, stat);
-        /* Go to next combination. */
-        int i = 13;
-        ++tier[13];
-        while (tier[i] > '6' && i < 13 + numP) {
-            ++tier[++i];
-        }
-        if (i == 13 + numP) {
-            break;
-        }
-        for (int j = 13; j < i; ++j) {
-            tier[j] = tier[i];
-        }
-    }
-}
-
-static void generate_tiers_multithread(char *tier, tier_stat_t *stat) {
-    /* Do not include tiers that exceed maximum
-       number of pieces on board. */
-    int count = 0;
-    for (int i = 0; i < 12; ++i) {
-        count += tier[i] - '0';
-    }
-    /* Do not consider tiers that have more pieces
-       than allowed on the board. */
-    if (count > END_GAME_PIECES_MAX) return;
-    append_red_pawns_multithread(tier, stat);
-}
-
-typedef struct TDMHelperArgs {
-    uint64_t begin;
-    uint64_t end;
-    char **tiers;
-} tdm_helper_args_t;
-
-static void *tdm_helper(void *_args) {
-    tdm_helper_args_t *args = (tdm_helper_args_t*)_args;
-    tier_stat_t *stat = (tier_stat_t*)calloc(1, sizeof(tier_stat_t));
-    for (uint64_t i = args->begin; i < args->end; ++i) {
-        generate_tiers_multithread(args->tiers[i], stat);
-    }
-    pthread_exit(stat);
-    return NULL;
-}
-
-void tier_driver_multithread(uint64_t nthread) {
-    make_triangle();
-    char tier[TIER_STR_LENGTH_MAX] = "000000000000";
-    uint64_t num_tiers = 2125764ULL;
-    char **tiers = (char**)safe_calloc(num_tiers, sizeof(char*));
-    for (uint64_t i = 0; i < num_tiers; ++i) {
-        tiers[i] = (char*)safe_malloc(TIER_STR_LENGTH_MAX);
-        for (int j = 0; j < TIER_STR_LENGTH_MAX; ++j) {
-            tiers[i][j] = tier[j];
-        }
-        next_rem(tier);
-    }
-
-    pthread_t *tid = (pthread_t*)safe_calloc(nthread, sizeof(pthread_t*));
-    tdm_helper_args_t *args = (tdm_helper_args_t*)safe_calloc(nthread, sizeof(tdm_helper_args_t));
-
-    for (uint64_t i = 0; i < nthread; ++i) {
-        args[i].begin = i * (num_tiers / nthread);
-        args[i].end = (i == nthread - 1) ? num_tiers : (i + 1) * (num_tiers / nthread);
-        args[i].tiers = tiers;
-        pthread_create(tid + i, NULL, tdm_helper, (void*)(args + i));
-    }
-    for (uint64_t i = 0; i < nthread; ++i) {
-        tier_stat_t *stat;
-        pthread_join(tid[i], (void**)&stat);
-        /* Update global statistics. */
-        tierCount1536GiB += stat->tierCount1536GiB;
-        tierCount384GiB += stat->tierCount384GiB;
-        tierCount96GiB += stat->tierCount96GiB;
-        tierCountIgnored += stat->tierCountIgnored;
-        tierSizeTotal += stat->tierSizeTotal;
-        if (stat->maxTierSize > maxTierSize) {
-            maxTierSize = stat->maxTierSize;
-        }
-        free(stat);
-    }
-    free(args);
-    free(tid);
-    for (uint64_t i = 0; i < num_tiers; ++i) {
-        free(tiers[i]);
-    }
-    free(tiers);
-
-    printf("total solvable tiers with a maximum of %d pieces: %"PRIu64"\n",
-           END_GAME_PIECES_MAX, tierCount96GiB+tierCount384GiB+tierCount1536GiB);
-    printf("number of tiers that fit in 96 GiB memory: %"PRIu64"\n", tierCount96GiB);
-    printf("number of tiers that fit in 384 GiB memory: %"PRIu64"\n", tierCount384GiB);
-    printf("number of tiers that fit in 1536 GiB memory: %"PRIu64"\n", tierCount1536GiB);
-    printf("number of tiers ignored: %"PRIu64"\n", tierCountIgnored);
-    printf("max solvable tier size: %"PRIu64"\n", maxTierSize);
-    /* Although in theory, this tierSizeTotal value could overflow, but it's unlikely.
-       Not checking for now. */
-    printf("total size of all solvable tiers: %"PRIu64"\n", tierSizeTotal);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -9,6 +9,7 @@ SOURCES += \
         misc.c \
         solver.c \
         tier.c \
+        tiersolver.c \
         tiertree.c
 
 HEADERS += \
@@ -16,5 +17,6 @@ HEADERS += \
     misc.h \
     solver.h \
     tier.h \
+    tiersolver.h \
     tiertree.h \
     types.h

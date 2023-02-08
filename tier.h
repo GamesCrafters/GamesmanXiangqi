@@ -9,10 +9,9 @@ typedef struct TierListElem {
     char tier[TIER_STR_LENGTH_MAX];
 } TierList;
 
-void tier_driver(void);
-void tier_driver_multithread(uint64_t nthread);
-
 TierList *child_tiers(const char *tier);
+uint8_t tier_num_child_tiers(const char *tier);
+TierList *parent_tiers(const char *tier);
 uint64_t tier_size(const char *tier);
 
 TierList *tier_list_insert_head(TierList *list, const char *tier);

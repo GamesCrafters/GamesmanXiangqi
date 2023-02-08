@@ -1,9 +1,8 @@
 #include "tier.h"
 #include "solver.h"
+#include "tiertree.h"
 
 int main() {
-//    solve_local(24ULL, (32ULL << 30));
-    tier_driver();
-//    tier_driver_multithread(960);
+    tier_tree_init(10);
     return 0;
 }
