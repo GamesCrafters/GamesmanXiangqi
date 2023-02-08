@@ -47,6 +47,15 @@ static void solver_save_values(const char *tier, uint16_t *values) {
     // TODO
 }
 
+static size_t num_tiers(const TierList *list) {
+    size_t size = 0;
+    while (list) {
+        ++size;
+        list = list->next;
+    }
+    return size;
+}
+
 // TODO: fill in all psudocode
 solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) {
     solver_stat_t stat;
@@ -63,8 +72,7 @@ solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) {
 
     /* STEP 1: LOAD ALL WIN/LOSE POSITIONS FROM ALL CHILD TIERS INTO FRONTIER. */
     TierList *list = child_tiers(tier);
-    size_t numChildTiers = 0;
-//    size_t numChildTiers = num_tiers(list);
+    size_t numChildTiers = num_tiers(list);
     uint64_t **winDivider = (uint64_t**)safe_malloc(numChildTiers*sizeof(uint64_t*));
     uint64_t **loseDivider = (uint64_t**)safe_malloc(numChildTiers*sizeof(uint64_t*));
     for (size_t i = 0; i < numChildTiers; ++i) {

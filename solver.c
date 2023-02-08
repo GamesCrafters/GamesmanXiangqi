@@ -5,24 +5,9 @@
 #include "tiertree.h"
 #include <stdio.h>
 
-static size_t num_tiers(const TierList *list) {
-    size_t size = 0;
-    while (list) {
-        ++size;
-        list = list->next;
-    }
-    return size;
-}
-
-static TierTreeEntryList *generate_tier_tree(void) {
-    TierTreeEntryList *solvableTiers = NULL;
-
-    return solvableTiers;
-}
-
 // TODO
-void solve_local(uint64_t nthread, uint64_t mem) {
-    TierTreeEntryList *solvableTiers = generate_tier_tree();
+void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem) {
+    TierTreeEntryList *solvableTiers = tier_tree_init(nPiecesMax, nthread << 5);
 
     TierTreeEntryList *tmp;
     while (solvableTiers) {
