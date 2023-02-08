@@ -12,8 +12,8 @@
 static const char *REM_MAX = "222255222222";
 /* Precalculated hash table number of buckets based on number of tiers. */
 static const uint64_t DEFAULT_BUCKETS[14] = {
-    0ULL, 89921753ULL, 89921753ULL, 89921753ULL, 89921753ULL,
-    89921753ULL, 89921753ULL, 89921753ULL, 89921753ULL, 89921753ULL,
+    2ULL, 29ULL, 331ULL, 2917ULL, 20231ULL,
+    155509ULL, 562739ULL, 2389259ULL, 8961619ULL, 29967629ULL,
     89921753ULL, 243108433ULL, 593756447ULL, 1312600687ULL
 };
 /************************* End Global Constants *************************/
