@@ -43,6 +43,9 @@
 static uint64_t choose[CHOOSE_ROWS][CHOOSE_COLS];
 static bool chooseInitialized = false;
 
+static uint64_t safe_add_uint64(uint64_t lhs, uint64_t rhs);
+static uint64_t safe_mult_uint64(uint64_t lhs, uint64_t rhs);
+
 static void make_triangle(void) {
     int i, j;
     choose[0][0] = 1;
@@ -324,4 +327,49 @@ uint64_t tier_size(const char *tier) {
         size *= stepSize;
     }
     return size;
+}
+
+static uint64_t safe_add_uint64(uint64_t lhs, uint64_t rhs) {
+    if (!lhs || !rhs || lhs > UINT64_MAX - rhs) {
+        return 0;
+    }
+    return lhs + rhs;
+}
+
+static uint64_t safe_mult_uint64(uint64_t lhs, uint64_t rhs) {
+    if (!lhs || !rhs || lhs > UINT64_MAX / rhs) {
+        return 0;
+    }
+    return lhs * rhs;
+}
+
+uint64_t tier_required_mem(const char *tier) {
+    uint64_t size = tier_size(tier);
+    if (!size) {
+        return 0ULL;
+    }
+    /* Start counter at 1 since 0ULL is reserved for error.
+       When calculations are done, we know that an error has
+       occurred if this value is 0ULL. Otherwise, decrement
+       this counter to get the actual value. */
+    uint64_t childSizeTotal = 1ULL;
+    TierList *childTiers = child_tiers(tier);
+    for (struct TierListElem *curr = childTiers; curr; curr = curr->next) {
+        uint64_t currChildSize = tier_size(curr->tier);
+        childSizeTotal = safe_add_uint64(childSizeTotal, currChildSize);
+    }
+    free_tier_list(childTiers);
+
+    if (!childSizeTotal) {
+        return 0ULL;
+    }
+    uint64_t mem =  safe_add_uint64(
+                safe_mult_uint64(19ULL, size),
+                safe_mult_uint64(16ULL, childSizeTotal)
+                );
+    if (!mem) {
+        return 0ULL;
+    }
+    /* We initialized childSizeTotal to 1, so we need to fix the calculation. */
+    return mem - 16ULL;
 }

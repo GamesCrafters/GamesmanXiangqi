@@ -39,6 +39,14 @@ void solve_local(uint64_t nthread, uint64_t mem) {
 }
 
 
+//printf("total solvable tiers with a maximum of %d pieces: %"PRIu64"\n",
+//       nPiecesMax, tierCount96GiB+tierCount384GiB+tierCount1536GiB);
+//printf("number of tiers that fit in 96 GiB memory: %"PRIu64"\n", tierCount96GiB);
+//printf("number of tiers that fit in 384 GiB memory: %"PRIu64"\n", tierCount384GiB);
+//printf("number of tiers that fit in 1536 GiB memory: %"PRIu64"\n", tierCount1536GiB);
+//printf("number of tiers ignored: %"PRIu64"\n", tierCountIgnored);
+//printf("max solvable tier size: %"PRIu64"\n", maxTierSize);
+//printf("total size of all solvable tiers: %"PRIu64"\n", tierSizeTotal);
 
 
 
