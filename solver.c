@@ -1,23 +1,53 @@
 #include "misc.h"
 #include "solver.h"
-#include "tier.h"
 #include "tiersolver.h"
 #include "tiertree.h"
 #include <stdio.h>
 
-// TODO
-void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem) {
-    TierTreeEntryList *solvableTiers = tier_tree_init(nPiecesMax, nthread << 5);
+static tier_tree_entry_t *get_tail(TierTreeEntryList *list) {
+    if (!list) {
+        return NULL;
+    }
+    while (list->next) {
+        list = list->next;
+    }
+    return list;
+}
 
-    TierTreeEntryList *tmp;
-    while (solvableTiers) {
-        solver_stat_t stat = solve_tier(solvableTiers->tier, nthread, mem);
+void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem) {
+    TierTreeEntryList *solvableTiersHead = tier_tree_init(nPiecesMax, nthread << 5);
+    tier_tree_entry_t *solvableTiersTail = get_tail(solvableTiersHead);
+    tier_tree_entry_t *tmp;
+    tier_solver_stat_t stat;
+    TierList *parentTiers, *walker;
+
+    while (solvableTiersHead) {
+        stat = solve_tier(solvableTiersHead->tier, nthread, mem);
         if (stat.numLegalPos) {
             /* Solve succeeded. Update tier tree. */
-
+            parentTiers = parent_tiers(solvableTiersHead->tier);
+            for (walker = parentTiers; walker; walker = walker->next) {
+                tmp = tier_tree_find(walker->tier);
+                if (--tmp->numUnsolvedChildren == 0) {
+                    tmp = tier_tree_remove(walker->tier);
+                    solvableTiersTail->next = tmp;
+                    tmp->next = NULL;
+                    solvableTiersTail = tmp;
+                }
+            }
+            tier_list_destroy(parentTiers);
+            printf("Tier %s:\n", solvableTiersHead->tier);
+            printf("total legal positions: %"PRIu64"\n", stat.numLegalPos);
+            printf("number of winning positions: %"PRIu64"\n", stat.numWin);
+            printf("number of losing positions: %"PRIu64"\n", stat.numLose);
+            printf("number of drawing positions: %"PRIu64"\n", stat.numLegalPos - stat.numWin - stat.numLose);
+            printf("longest win for red is %"PRIu64" steps at position %"PRIu64"\n", stat.longestNumStepsToRedWin, stat.longestPosToRedWin);
+            printf("longest win for black is %"PRIu64" steps at position %"PRIu64"\n", stat.longestNumStepsToBlackWin, stat.longestPosToBlackWin);
+            printf("\n");
+            // TODO: process stat
         }
-        tmp = solvableTiers;
-        solvableTiers = solvableTiers->next;
+        tmp = solvableTiersHead;
+        solvableTiersHead = solvableTiersHead->next;
         free(tmp);
     }
     printf("solve_local: solver done.");

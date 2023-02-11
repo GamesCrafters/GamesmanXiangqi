@@ -4,6 +4,7 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += \
+        frontier.c \
         game.c \
         main.c \
         misc.c \
@@ -13,6 +14,7 @@ SOURCES += \
         tiertree.c
 
 HEADERS += \
+    frontier.h \
     game.h \
     misc.h \
     solver.h \

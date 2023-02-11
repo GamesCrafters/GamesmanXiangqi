@@ -1,4 +1,3 @@
-#define __STDC_FORMAT_MACROS
 #include "tier.h"
 #include "types.h"
 #include "misc.h"
@@ -66,13 +65,22 @@ TierList *tier_list_insert_head(TierList *list, const char *tier) {
     return newHead;
 }
 
-void free_tier_list(TierList *list) {
+void tier_list_destroy(TierList *list) {
     struct TierListElem *next;
     while (list) {
         next = list->next;
         free(list);
         list = next;
     }
+}
+
+void tier_array_destroy(struct TierArray *array) {
+    if (!array || !array->tiers) return;
+    for (uint8_t i = 0; i < array->size; ++i) {
+        free(array->tiers[i]);
+    }
+    free(array->tiers);
+    array->tiers = NULL;
 }
 
 static void str_shift_left(char *str, int idx) {
@@ -130,7 +138,7 @@ static TierList *remove_piece_and_insert(TierList *list, char *tier, int idx) {
  * @todo This function can be further optimized by tightening
  * the restrictions on when a piece can be captured.
  */
-TierList *child_tiers(const char *tier) {
+TierList *tier_get_child_tier_list(const char *tier) {
     int redPawnTotal = tier[RED_P_IDX] - '0';
     int blackPawnTotal = tier[BLACK_P_IDX] - '0';
     int i;
@@ -197,17 +205,49 @@ TierList *child_tiers(const char *tier) {
 }
 
 /**
+ * @brief Returns a dynamic array of child tiers of TIER.
+ * The array should be freed by the caller of this function.
+ */
+struct TierArray tier_get_child_tier_array(const char *tier) {
+    struct TierArray array;
+    TierList *list = tier_get_child_tier_list(tier);
+    struct TierListElem *walker;
+    uint8_t i;
+
+    /* Count the number of child tiers in the list. */
+    array.size = 0;
+    for (walker = list; walker; walker = walker->next) {
+        ++array.size;
+    }
+
+    /* Allocate space. */
+    array.tiers = (char**)safe_malloc(array.size * sizeof(char*));
+    for (i = 0; i < array.size; ++i) {
+        array.tiers[i] = safe_malloc(TIER_STR_LENGTH_MAX * sizeof(char));
+    }
+
+    /* Copy tier strings. */
+    for (walker = list, i = 0; walker; walker = walker->next, ++i) {
+        for (int j = 0; j < TIER_STR_LENGTH_MAX; ++j) {
+            array.tiers[i][j] = walker->tier[j];
+        }
+    }
+    tier_list_destroy(list);
+    return array;
+}
+
+/**
  * @brief Returns the number of child tiers of TIER.
  */
 uint8_t tier_num_child_tiers(const char *tier) {
-    TierList *list = child_tiers(tier);
+    TierList *list = tier_get_child_tier_list(tier);
     uint8_t n = 0;
     TierList *walker = list;
     while (walker) {
         ++n;
         walker = walker->next;
     }
-    free_tier_list(list);
+    tier_list_destroy(list);
     return n;
 }
 
@@ -353,12 +393,12 @@ uint64_t tier_required_mem(const char *tier) {
        occurred if this value is 0ULL. Otherwise, decrement
        this counter to get the actual value. */
     uint64_t childSizeTotal = 1ULL;
-    TierList *childTiers = child_tiers(tier);
+    TierList *childTiers = tier_get_child_tier_list(tier);
     for (struct TierListElem *curr = childTiers; curr; curr = curr->next) {
         uint64_t currChildSize = tier_size(curr->tier);
         childSizeTotal = safe_add_uint64(childSizeTotal, currChildSize);
     }
-    free_tier_list(childTiers);
+    tier_list_destroy(childTiers);
 
     if (!childSizeTotal) {
         return 0ULL;

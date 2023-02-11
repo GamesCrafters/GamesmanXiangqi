@@ -1,5 +1,6 @@
 #ifndef MISC_H
 #define MISC_H
+#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <malloc.h>
 
