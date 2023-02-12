@@ -25,8 +25,16 @@
 #define FR_SIZE (((UINT16_MAX)-1)>>1)
 #define DRAW_VALUE 32768
 
-static fr_t winFR, loseFR;
-static uint64_t **winDivider = NULL, **loseDivider = NULL;
+tier_solver_stat_t stat;               // Tier solver statistics.
+static fr_t winFR, loseFR;             // Win and lose frontiers.
+static uint64_t **winDivider = NULL;   // Holds the number of positions from each child tier in loseFR (heap).
+static uint64_t **loseDivider = NULL;  // Holds the number of positions from each child tier in winFR (heap).
+struct TierArray childTiers;           // Array of child tiers (heap).
+static uint8_t *nUndChild = NULL;      // Number of undecided child positions array (heap).
+static uint16_t *values = NULL;        // Remoteness value array (heap).
+static uint64_t *parents = NULL;       // Holds a list of parent positions of a frontier position. (heap)
+static uint64_t tierRequiredMem;       // Mem required to solve TIER.
+static uint64_t tierSize;              // Number of positions in TIER.
 
 /**
  * @brief Initializes solver frontiers.
@@ -120,48 +128,62 @@ static void accumulate_dividers(uint8_t nChildTiers) {
     }
 }
 
-//static bool helper() {
-//    parents = game_get_parents(
-//                childTiers.tiers[childIdx],
-//                loseFR.buckets[rmt][i],
-//                tier
-//                );
-//    if (!parents) goto bail_out;
-//    for (k = 0; parents[k] != UINT64_MAX; ++k) {
-//        /* All parents are win in (i+1) positions. */
-//        values[parents[k]] = UINT16_MAX - rmt - 1; // Refer to the value table.
-//        nUndChild[parents[k]] = 0;
-//        frontier_add(&winFR, parents[k], rmt + 1);
-//    }
-//    free(parents);
-//}
+static bool process_win_pos(uint16_t childRmt,
+                            const char *childPosTier,
+                            uint64_t childPosHash,
+                            const char *parentPosTier) {
+    parents = game_get_parents(childPosTier, childPosHash, parentPosTier);
+    if (!parents) return false;
+    for (uint8_t i = 0; parents[i] != UINT64_MAX; ++i) {
+        /* All parents are win in (childRmt + 1) positions. */
+        values[parents[i]] = UINT16_MAX - childRmt - 1; // Refer to the value table.
+        nUndChild[parents[i]] = 0;
+        frontier_add(&winFR, parents[i], childRmt + 1);
+    }
+    free(parents);
+    return true;
+}
+
+static bool process_lose_pos(uint16_t childRmt,
+                             const char *childPosTier,
+                             uint64_t childPosHash,
+                             const char *parentPosTier) {
+    parents = game_get_parents(childPosTier, childPosHash, parentPosTier);
+    if (!parents) return false;
+    for (uint8_t i = 0; parents[i] != UINT64_MAX; ++i) {
+        /* If this child position is the last undecided child of parent position,
+           mark parent as lose in (childRmt + 1). */
+        if (--nUndChild[parents[i]] == 0) {
+            values[parents[i]] = childRmt + 2; // Refer to the value table.
+            frontier_add(&loseFR, parents[i], childRmt + 1);
+        }
+    }
+    free(parents);
+    return true;
+}
 
 tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) {
     (void)nthread; // TODO: parallelize.
-    struct TierArray childTiers;    // Array of child tiers (heap).
-    tier_solver_stat_t stat;        // Tier solver statistics.
-    uint8_t *nUndChild = NULL;      // Number of undecided child positions array (heap).
-    uint8_t k, childIdx;            // Parent array and child tier index iterators.
-    uint16_t *values = NULL;        // Remoteness value array (heap).
-    uint16_t rmt;                   // Frontier remoteness iterator.
-    uint64_t *parents = NULL;       // Holds a list of parent positions of a frontier position. (heap)
-    uint64_t childTierSize;         // Holds the size of a child tier.
-    uint64_t i, hash;               // Iterators.
-    uint64_t tierRequiredMem = tier_required_mem(tier); // Mem required to solve TIER.
-    uint64_t tierSize = tier_size(tier);                // Number of positions in TIER.
+    bool success;               // Success flag.
+    uint8_t childIdx;           // Child tier index iterator.
+    uint16_t rmt;               // Frontier remoteness iterator.
+    uint64_t childTierSize;     // Holds the size of a child tier.
+    uint64_t i, hash;           // Iterators.
 
-    init_solver_stat(&stat); // Initialize all counts zeros.
+    /* STEP 0: INITIALIZE. */
+    tierRequiredMem = tier_required_mem(tier);
+    tierSize = tier_size(tier);
+
+    init_solver_stat(&stat); // Initialize to zero.
     if (!tierRequiredMem || tierRequiredMem > mem) {
         /* Not enough memory. */
         return stat;
     }
-
-    /* STEP 0: INITIALIZE. */
-    init_FR(); // If OOM, there is a bug. (heap)
+    init_FR(); // If OOM, there is a bug.
 
     /* STEP 1: LOAD ALL WIN/LOSE POSITIONS FROM ALL CHILD TIERS INTO FRONTIER. */
     childTiers = tier_get_child_tier_array(tier); // If OOM, there is a bug.
-    init_dividers(childTiers.size); // If OOM, there is a bug. (heap)
+    init_dividers(childTiers.size); // If OOM, there is a bug.
     for (i = 0; i < childTiers.size; ++i) {
         /* Load tier from disk */
         childTierSize = tier_size(childTiers.tiers[i]);
@@ -199,46 +221,25 @@ tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) 
         i = 0;
         /* Process losing positions loaded from child tiers. */
         for (childIdx = 0; childIdx < childTiers.size; ++childIdx) {
-            for (; i < loseDivider[rmt][childIdx]; ++i) {
-                parents = game_get_parents(
-                            childTiers.tiers[childIdx],
-                            loseFR.buckets[rmt][i],
-                            tier
-                            );
-                if (!parents) goto bail_out;
-                for (k = 0; parents[k] != UINT64_MAX; ++k) {
-                    /* All parents are win in (i+1) positions. */
-                    values[parents[k]] = UINT16_MAX - rmt - 1; // Refer to the value table.
-                    nUndChild[parents[k]] = 0;
-                    frontier_add(&winFR, parents[k], rmt + 1);
-                }
-                free(parents);
-            }
+            success = process_win_pos(rmt, childTiers.tiers[childIdx], loseFR.buckets[rmt][i], tier);
+            if (!success) goto bail_out;
         }
         /* Process losing positions in current tier. */
-        for (; i < loseFR.sizes[rmt]; ++i) {
-
-        }
+        success = process_win_pos(rmt, tier, loseFR.buckets[rmt][i], NULL);
+        if (!success) goto bail_out;
 
         /* Process winFR. */
         i = 0;
+        /* Process winning positions loaded from child tiers. */
         for (childIdx = 0; childIdx < childTiers.size; ++childIdx) {
             for (; i < winDivider[rmt][childIdx]; ++i) {
-                parents = game_get_parents(
-                            childTiers.tiers[childIdx],
-                            winFR.buckets[rmt][i],
-                            tier
-                            );
-                if (!parents) goto bail_out;
-                for (k = 0; parents[k] != UINT64_MAX; ++k) {
-                    if (--nUndChild[parents[k]] == 0) {
-                        values[parents[k]] = rmt + 2; // Refer to the value table.
-                        frontier_add(&loseFR, parents[k], rmt + 1);
-                    }
-                }
-                free(parents);
+                success = process_lose_pos(rmt, childTiers.tiers[childIdx], winFR.buckets[rmt][i], tier);
+                if (!success) goto bail_out;
             }
         }
+        /* Process winning positions in current tier. */
+        success = process_lose_pos(rmt, tier, winFR.buckets[rmt][i], NULL);
+        if (!success) goto bail_out;
     }
     destroy_FR();
     destroy_dividers();

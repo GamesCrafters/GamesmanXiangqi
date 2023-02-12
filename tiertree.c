@@ -150,7 +150,7 @@ static void append_black_pawns_multithread(char *tier, TierTreeEntryList **solva
         uint8_t numChildren = tier_num_child_tiers(tier);
         if (numChildren) {
             /* Add tier to tier tree if it depends on at least one child tier. */
-            tier_tree_add_multithreaded(tier, tier_num_child_tiers(tier));
+            tier_tree_add_multithreaded(tier, numChildren);
         } else {
             /* Tier is primitive and can be solved immediately. */
             solvable_list_add(tier, solvable);

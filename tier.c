@@ -29,7 +29,7 @@
  * row 4 and one of them is on row 2, then RED_PAWN_ROWS=="422".
  * A pawn can never reach rows 7-9 according to the rules.
  *
- * BLACK_PAWN_ROWS has the exact same formatting as RED_PAWN_ROWS
+ * BLACK_PAWN_ROWS has the exact same format as RED_PAWN_ROWS
  * except that we start counting the row number from the bottom
  * row of red's side.
  */
@@ -135,10 +135,9 @@ static TierList *remove_piece_and_insert(TierList *list, char *tier, int idx) {
  * @brief Returns a linked list of child tiers of the given TIER.
  * @param tier: generate child tiers of this tier.
  * @return A linked list of child tiers.
- * @todo This function can be further optimized by tightening
- * the restrictions on when a piece can be captured.
  */
 TierList *tier_get_child_tier_list(const char *tier) {
+    // TODO: redesign this function
     int redPawnTotal = tier[RED_P_IDX] - '0';
     int blackPawnTotal = tier[BLACK_P_IDX] - '0';
     int i;
