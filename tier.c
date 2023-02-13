@@ -1,9 +1,8 @@
 #include "tier.h"
 #include "types.h"
 #include "misc.h"
-#include <pthread.h>
+#include <assert.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 /**
@@ -42,19 +41,18 @@
 static uint64_t choose[CHOOSE_ROWS][CHOOSE_COLS];
 static bool chooseInitialized = false;
 
+/********************* Helper Function Declarations *********************/
+static void make_triangle(void);
 static uint64_t safe_add_uint64(uint64_t lhs, uint64_t rhs);
 static uint64_t safe_mult_uint64(uint64_t lhs, uint64_t rhs);
 
-static void make_triangle(void) {
-    int i, j;
-    choose[0][0] = 1;
-    for (i = 1; i < CHOOSE_ROWS; ++i) {
-        choose[i][0] = 1;
-        for (j = 1; j <= (i < CHOOSE_COLS-1 ? i : CHOOSE_COLS-1); ++j) {
-            choose[i][j] = choose[i - 1][j - 1] + choose[i - 1][j];
-        }
-    }
-}
+static TierList *rm_insert(TierList *list, char *tier, int idx);
+static TierList *rm_pawn_insert(TierList *list, char *tier, int idx, int row);
+static TierList *rm_pfwd_insert(TierList *list, char *tier, int pieceIdx,
+                                int pawnIdx, int pawnRow);
+static TierList *rm_pawn_pfwd_insert(TierList *list, char *tier, int capturedIdx,
+                                     int capturedRow, int fwdIdx, int fwdRow);
+/******************* End Helper Function Declarations *******************/
 
 TierList *tier_list_insert_head(TierList *list, const char *tier) {
     TierList *newHead = (TierList *)safe_malloc(sizeof(struct TierListElem));
@@ -83,106 +81,178 @@ void tier_array_destroy(struct TierArray *array) {
     array->tiers = NULL;
 }
 
-static void str_shift_left(char *str, int idx) {
-    while (str[idx]) {
-        str[idx] = str[idx + 1];
-        ++idx;
+static void find_pawn_locations(const char *tier, bool *redPRow, bool *blackPRow) {
+    int redPawnCount = tier[RED_P_IDX] - '0';
+    int blackPawnCount = tier[BLACK_P_IDX] - '0';
+    int i;
+    for (i = 13; i < 13 + redPawnCount; ++i) {
+        redPRow[tier[i] - '0'] = true;
     }
-}
-
-static void str_insert(char *str, char c, int idx) {
-    char tmp;
-    while (c) {
-        tmp = str[idx];
-        str[idx] = c;
-        c = tmp;
-        ++idx;
+    for (i = 14+redPawnCount; i < 14+redPawnCount+blackPawnCount; ++i) {
+        blackPRow[tier[i] - '0'] = true;
     }
-    str[idx] = '\0';
-}
-
-static TierList *remove_piece_and_insert(TierList *list, char *tier, int idx) {
-    int redPawnTotal = tier[RED_P_IDX] - '0';
-    int blackPawnTotal = tier[BLACK_P_IDX] - '0';
-    char hold;
-
-    --tier[idx];
-    /* If we are removing a pawn, we need to update the pawn list accordingly. */
-    if (idx == RED_P_IDX) {
-        for (int i = 13; i < 13 + redPawnTotal; ++i) {
-            while (tier[i] == tier[i + 1]) ++i;
-            hold = tier[i];
-            str_shift_left(tier, i);
-            list = tier_list_insert_head(list, tier);
-            str_insert(tier, hold, i);
-        }
-    } else if (idx == BLACK_P_IDX) {
-        for (int i = 14+redPawnTotal; i < 14+redPawnTotal+blackPawnTotal; ++i) {
-            while (tier[i] == tier[i + 1]) ++i;
-            hold = tier[i];
-            str_shift_left(tier, i);
-            list = tier_list_insert_head(list, tier);
-            str_insert(tier, hold, i);
-        }
-    } else {
-        list = tier_list_insert_head(list, tier);
-    }
-    ++tier[idx];
-    return list;
 }
 
 /**
  * @brief Returns a linked list of child tiers of the given TIER.
- * @param tier: generate child tiers of this tier.
- * @return A linked list of child tiers.
  */
 TierList *tier_get_child_tier_list(const char *tier) {
-    // TODO: redesign this function
-    int redPawnTotal = tier[RED_P_IDX] - '0';
-    int blackPawnTotal = tier[BLACK_P_IDX] - '0';
-    int i;
     TierList *list = NULL;
+    bool redPRow[7] = {false};
+    bool blackPRow[7] = {false};
+    bool redHasA = tier[RED_A_IDX] > '0';
+    bool redHasB = tier[RED_B_IDX] > '0';
+    bool redHasN = tier[RED_N_IDX] > '0';
+    bool redHasC = tier[RED_C_IDX] > '0';
+    bool redHasR = tier[RED_R_IDX] > '0';
+    bool blackHasA = tier[BLACK_A_IDX] > '0';
+    bool blackHasB = tier[BLACK_B_IDX] > '0';
+    bool blackHasN = tier[BLACK_N_IDX] > '0';
+    bool blackHasC = tier[BLACK_C_IDX] > '0';
+    bool blackHasR = tier[BLACK_R_IDX] > '0';
+    bool redHasRCN = redHasR || redHasC || redHasN;
+    bool blackHasRCN = blackHasR || blackHasC || blackHasN;
     char tierCpy[TIER_STR_LENGTH_MAX];
-    for (int i = 0; i < TIER_STR_LENGTH_MAX; ++i) {
+    int redPawnCount = tier[RED_P_IDX] - '0';
+    int blackPawnCount = tier[BLACK_P_IDX] - '0';
+    int i;
+    for (i = 0; i < TIER_STR_LENGTH_MAX; ++i) {
         tierCpy[i] = tier[i];
     }
-    bool redCanCrossRiver = tier[RED_P_IDX] > '0' || tier[RED_N_IDX] > '0' ||
-            tier[RED_C_IDX] > '0' || tier[RED_R_IDX] > '0';
-    bool blackCanCrossRiver = tier[BLACK_P_IDX] > '0' || tier[BLACK_N_IDX] > '0' ||
-            tier[BLACK_C_IDX] > '0' || tier[BLACK_R_IDX] > '0';
+    find_pawn_locations(tier, redPRow, blackPRow);
 
-    /* 1. Child tiers by capturing. */
+    /* 1. CHILD TIERS BY CAPTURING. */
 
-    /* Advisors and bishops can only be captured if there
-       exists at least one opponent piece that can cross
-       the river. */
-    if (blackCanCrossRiver && tier[RED_A_IDX] > '0') {
-        list = remove_piece_and_insert(list, tierCpy, RED_A_IDX);
+    /* Advisors can be captured if opponent has R/C/N, a pawn on row
+       0/1/2 without moving forward, or a pawn on row 1/2/3 with a
+       forward move. */
+    if (redHasA) {
+        if (blackHasRCN || blackPRow[0] || blackPRow[1] || blackPRow[2]) {
+            list = rm_insert(list, tierCpy, RED_A_IDX);
+        }
+        for (i = 1; i <= 3; ++i) {
+            if (blackPRow[i]) {
+                list = rm_pfwd_insert(list, tierCpy, RED_A_IDX, BLACK_P_IDX, i);
+            }
+        }
     }
-    if (blackCanCrossRiver && tier[RED_B_IDX] > '0') {
-        list = remove_piece_and_insert(list, tierCpy, RED_B_IDX);
-    }
-    if (redCanCrossRiver && tier[BLACK_A_IDX] > '0') {
-        list = remove_piece_and_insert(list, tierCpy, BLACK_A_IDX);
-    }
-    if (redCanCrossRiver && tier[BLACK_B_IDX] > '0') {
-        list = remove_piece_and_insert(list, tierCpy, BLACK_B_IDX);
-    }
-
-    /* All other pieces can be captured by the king. */
-    for (i = RED_P_IDX; i <= BLACK_R_IDX; ++i) {
-        if (tier[i] > '0') {
-            list = remove_piece_and_insert(list, tierCpy, i);
+    if (blackHasA) {
+        if (redHasRCN || redPRow[0] || redPRow[1] || redPRow[2]) {
+            list = rm_insert(list, tierCpy, BLACK_A_IDX);
+        }
+        for (i = 1; i <= 3; ++i) {
+            if (redPRow[i]) {
+                list = rm_pfwd_insert(list, tierCpy, BLACK_A_IDX, RED_P_IDX, i);
+            }
         }
     }
 
-    /* 2. Child tiers by forward pawn moves. */
+    /* Bishops can be captured if opponent has R/C/N, a pawn on row
+       0/2/4 without moving forward, or a pawn on row 1/3/5 with a
+       forward move. */
+    if (redHasB) {
+        if (blackHasRCN || blackPRow[0] || blackPRow[2] || blackPRow[4]) {
+            list = rm_insert(list, tierCpy, RED_B_IDX);
+        }
+        for (i = 1; i <= 5; i += 2) {
+            if (blackPRow[i]) {
+                list = rm_pfwd_insert(list, tierCpy, RED_B_IDX, BLACK_P_IDX, i);
+            }
+        }
+    }
+    if (blackHasB) {
+        if (redHasRCN || redPRow[0] || redPRow[2] || redPRow[4]) {
+            list = rm_insert(list, tierCpy, BLACK_B_IDX);
+        }
+        for (i = 1; i <= 5; i += 2) {
+            if (redPRow[i]) {
+                list = rm_pfwd_insert(list, tierCpy, BLACK_B_IDX, RED_P_IDX, i);
+            }
+        }
+    }
+
+    /* A pawn on row 0/1/2 can always be captured by the opponent king,
+       but cannot be captured by an opponent pawn. */
+    for (i = 0; i < 3; ++i) {
+        if (redPRow[i]) {
+            list = rm_pawn_insert(list, tierCpy, RED_P_IDX, i);
+        }
+        if (blackPRow[i]) {
+            list = rm_pawn_insert(list, tierCpy, BLACK_P_IDX, i);
+        }
+    }
+
+    /* A pawn on row 3 can be captured only if opponent has R/C/N,
+       and cannot be captured by an opponent pawn. */
+    if (redPRow[3] && blackHasRCN) {
+        list = rm_pawn_insert(list, tierCpy, RED_P_IDX, 3);
+    }
+    if (blackPRow[3] && redHasRCN) {
+        list = rm_pawn_insert(list, tierCpy, BLACK_P_IDX, 3);
+    }
+
+    /* A pawn on row 4 can be captured if opponent has R/C/N/B, or a
+       pawn on row 6 with a forward move (3 code blocks down). */
+    if (redPRow[4] && (blackHasRCN || blackHasB)) {
+        list = rm_pawn_insert(list, tierCpy, RED_P_IDX, 4);
+    }
+    if (blackPRow[4] && (redHasRCN || redHasB)) {
+        list = rm_pawn_insert(list, tierCpy, BLACK_P_IDX, 4);
+    }
+
+    /* A pawn on row 5 can be captured if opponent has R/C/N, a pawn
+       on row 4, or a pawn on row 5 with a forward move (2 code blocks
+       down). */
+    if (redPRow[5] && (blackHasRCN || blackPRow[4])) {
+        list = rm_pawn_insert(list, tierCpy, RED_P_IDX, 5);
+    }
+    if (blackPRow[5] && (redHasRCN || redPRow[4])) {
+        list = rm_pawn_insert(list, tierCpy, BLACK_P_IDX, 5);
+    }
+
+    /* A pawn on row 6 can be captured if opponent has R/C/N, a pawn
+       on row 3, or a pawn on row 4 with a forward move (after this
+       code block).*/
+    if (redPRow[6] && (blackHasRCN || blackPRow[3])) {
+        list = rm_pawn_insert(list, tierCpy, RED_P_IDX, 6);
+    }
+    if (blackPRow[6] && (redHasRCN || redPRow[3])) {
+        list = rm_pawn_insert(list, tierCpy, BLACK_P_IDX, 6);
+    }
+
+    /* Pawn captures with a forward pawn move. */
+    for (i = 4; i <= 6; ++i) {
+        if (redPRow[i] && blackPRow[10-i]) {
+            list = rm_pawn_pfwd_insert(list, tierCpy, RED_P_IDX, i, BLACK_P_IDX, 10-i);
+            list = rm_pawn_pfwd_insert(list, tierCpy, BLACK_P_IDX, 10-i, RED_P_IDX, i);
+        }
+    }
+
+    /* Knights, cannons, and rooks can always be captured by the oppoent
+       king, or an opponent pawn not on row 0 with a forward move. */
+    for (i = RED_N_IDX; i <= BLACK_R_IDX; ++i) {
+        if (tier[i] > '0') {
+            list = rm_insert(list, tierCpy, i);
+            for (int j = 1; j <= 6; ++j) {
+                if (!(i & 1) && blackPRow[j]) {
+                    list = rm_pfwd_insert(list, tierCpy, i, BLACK_P_IDX, j);
+                } else if ((i & 1) && redPRow[j]) {
+                    list = rm_pfwd_insert(list, tierCpy, i, RED_P_IDX, j);
+                }
+            }
+        }
+    }
+
+    /* 2. CHILD TIERS BY A FORWARD PAWN MOVE W/O CAPTURING.
+       Note that we ignored the possible cases where a forward pawn move
+       is not available without capturing an opponent pawn. This will
+       waste some memory during the solving phase but is not a bug. */
 
     /* Check all available forward red pawn moves. Note that the row
        numbers of pawns are sorted in descending order, so we can
        stop the loop once we see a pawn on the 0th row, which is the
-       bottom row on the opponent's side. */
-    for (i = 13; i < 13 + redPawnTotal && tier[i] > '0'; ++i) {
+       bottom-most row on the opponent's side. */
+    for (i = 13; i < 13 + redPawnCount && tier[i] > '0'; ++i) {
         /* Skip current pawn if next pawn is also on the same row
            because moving either pawn gives the same tier. No need
            to check if i+1 is out of bounds. */
@@ -193,13 +263,12 @@ TierList *tier_get_child_tier_list(const char *tier) {
     }
 
     /* Check forward black pawn moves. */
-    for (i = 14+redPawnTotal; i < 14+redPawnTotal+blackPawnTotal && tier[i] > '0'; ++i) {
+    for (i = 14+redPawnCount; i < 14+redPawnCount+blackPawnCount && tier[i] > '0'; ++i) {
         while (tier[i] == tier[i+1]) ++i;
         --tierCpy[i];
         list = tier_list_insert_head(list, tierCpy);
         ++tierCpy[i];
     }
-
     return list;
 }
 
@@ -271,8 +340,8 @@ uint8_t tier_num_child_tiers(const char *tier) {
  * tier size calculation step STEP.
  */
 static uint64_t tier_size_step(const char *tier, int step) {
-    int redPawnTotal = tier[RED_P_IDX] - '0';
-    int blackPawnTotal = tier[BLACK_P_IDX] - '0';
+    int redPawnCount = tier[RED_P_IDX] - '0';
+    int blackPawnCount = tier[BLACK_P_IDX] - '0';
     int redPawnRow = 0, blackPawnRow = 0;
     int i;
     if (!chooseInitialized){
@@ -305,17 +374,17 @@ static uint64_t tier_size_step(const char *tier, int step) {
     case 4: case 5: case 6: {
         /* Bottom three rows of black's half-board. No black pawns should be found.
            There are nCr(9, red) ways to place red pawns on the specified row. */
-        for (i = 13; i < 13 + redPawnTotal; ++i) {
+        for (i = 13; i < 13 + redPawnCount; ++i) {
             redPawnRow += (tier[i] - '0' == step - 4);
         }
         return choose[9][redPawnRow];
     }
 
     case 7: case 8: case 9: case 10: {
-        for (i = 13; i < 13 + redPawnTotal; ++i) {
+        for (i = 13; i < 13 + redPawnCount; ++i) {
             redPawnRow += (tier[i] - '0' == step - 4);
         }
-        for (i = 14 + redPawnTotal; i < 14 + redPawnTotal + blackPawnTotal; ++i) {
+        for (i = 14 + redPawnCount; i < 14 + redPawnCount + blackPawnCount; ++i) {
             blackPawnRow += (9 - (tier[i] - '0') == step - 4);
         }
         if (step < 9) {
@@ -334,7 +403,7 @@ static uint64_t tier_size_step(const char *tier, int step) {
     case 11: case 12: case 13: {
         /* Bottom three rows of red's half-board. No red pawns should be found.
            There are nCr(9, black) ways to place black pawns on the specified row. */
-        for (i = 14 + redPawnTotal; i < 14 + redPawnTotal + blackPawnTotal; ++i) {
+        for (i = 14 + redPawnCount; i < 14 + redPawnCount + blackPawnCount; ++i) {
             blackPawnRow += (9 - (tier[i] - '0') == step - 4);
         }
         return choose[9][blackPawnRow];
@@ -368,20 +437,6 @@ uint64_t tier_size(const char *tier) {
     return size;
 }
 
-static uint64_t safe_add_uint64(uint64_t lhs, uint64_t rhs) {
-    if (!lhs || !rhs || lhs > UINT64_MAX - rhs) {
-        return 0;
-    }
-    return lhs + rhs;
-}
-
-static uint64_t safe_mult_uint64(uint64_t lhs, uint64_t rhs) {
-    if (!lhs || !rhs || lhs > UINT64_MAX / rhs) {
-        return 0;
-    }
-    return lhs * rhs;
-}
-
 uint64_t tier_required_mem(const char *tier) {
     uint64_t size = tier_size(tier);
     if (!size) {
@@ -402,7 +457,7 @@ uint64_t tier_required_mem(const char *tier) {
     if (!childSizeTotal) {
         return 0ULL;
     }
-    uint64_t mem =  safe_add_uint64(
+    uint64_t mem = safe_add_uint64(
                 safe_mult_uint64(19ULL, size),
                 safe_mult_uint64(16ULL, childSizeTotal)
                 );
@@ -412,3 +467,136 @@ uint64_t tier_required_mem(const char *tier) {
     /* We initialized childSizeTotal to 1, so we need to fix the calculation. */
     return mem - 16ULL;
 }
+
+/***************************** Helper Functions ******************************/
+
+static void make_triangle(void) {
+    int i, j;
+    choose[0][0] = 1;
+    for (i = 1; i < CHOOSE_ROWS; ++i) {
+        choose[i][0] = 1;
+        for (j = 1; j <= (i < CHOOSE_COLS-1 ? i : CHOOSE_COLS-1); ++j) {
+            choose[i][j] = choose[i - 1][j - 1] + choose[i - 1][j];
+        }
+    }
+}
+
+static uint64_t safe_add_uint64(uint64_t lhs, uint64_t rhs) {
+    if (!lhs || !rhs || lhs > UINT64_MAX - rhs) {
+        return 0;
+    }
+    return lhs + rhs;
+}
+
+static uint64_t safe_mult_uint64(uint64_t lhs, uint64_t rhs) {
+    if (!lhs || !rhs || lhs > UINT64_MAX / rhs) {
+        return 0;
+    }
+    return lhs * rhs;
+}
+
+static void str_shift_left(char *str, int idx) {
+    while (str[idx]) {
+        str[idx] = str[idx + 1];
+        ++idx;
+    }
+}
+
+static void str_insert(char *str, char c, int idx) {
+    char tmp;
+    while (c) {
+        tmp = str[idx];
+        str[idx] = c;
+        c = tmp;
+        ++idx;
+    }
+    str[idx] = '\0';
+}
+
+static void get_pawn_begin_end(const char *tier, int pawnIdx, int *begin, int *end) {
+    int redPawnCount = tier[RED_P_IDX] - '0';
+    int blackPawnCount = tier[BLACK_P_IDX] - '0';
+    if (pawnIdx == RED_P_IDX) {
+        *begin = 13;
+        *end = 13 + redPawnCount;
+    } else {
+        *begin = 14+redPawnCount;
+        *end = 14+redPawnCount+blackPawnCount;
+    }
+}
+
+static void get_pawn_rbegin_rend(const char *tier, int pawnIdx, int *rbegin, int *rend) {
+    int redPawnCount = tier[RED_P_IDX] - '0';
+    int blackPawnCount = tier[BLACK_P_IDX] - '0';
+    if (pawnIdx == RED_P_IDX) {
+        *rbegin = 12 + redPawnCount;
+        *rend = 12;
+    } else {
+        *rbegin = 13+redPawnCount+blackPawnCount;
+        *rend = 13+redPawnCount;
+    }
+}
+
+static void add_pawn(char *tier, int pawnIdx, int row) {
+    assert(tier[pawnIdx] <= '5');
+    int begin, end, i;
+    get_pawn_begin_end(tier, pawnIdx, &begin, &end);
+    ++tier[pawnIdx];
+    for (i = begin; i < end && tier[i] > '0'+row; ++i);
+    str_insert(tier, '0'+row, i);
+}
+
+static void rm_pawn(char *tier, int pawnIdx, int row) {
+    assert(tier[pawnIdx] > '0');
+    int begin, end, i;
+    get_pawn_begin_end(tier, pawnIdx, &begin, &end);
+    --tier[pawnIdx];
+    for (i = begin; tier[i] != '0'+row; ++i);
+    assert(i < end);
+    str_shift_left(tier, i);
+}
+
+static void move_pawn_forward(char *tier, int pawnIdx, int row) {
+    assert(tier[pawnIdx] > '0');
+    int begin, end, i;
+    get_pawn_rbegin_rend(tier, pawnIdx, &begin, &end);
+    // TODO
+}
+
+static void move_pawn_backward(char *tier, int idx, int row) {
+    // TODO
+}
+
+static TierList *rm_insert(TierList *list, char *tier, int idx) {
+    --tier[idx];
+    list = tier_list_insert_head(list, tier);
+    ++tier[idx];
+    return list;
+}
+
+static TierList *rm_pawn_insert(TierList *list, char *tier, int idx, int row) {
+    rm_pawn(tier, idx, row);
+    list = tier_list_insert_head(list, tier);
+    add_pawn(tier, idx, row);
+    return list;
+}
+
+static TierList *rm_pfwd_insert(TierList *list, char *tier, int pieceIdx,
+                                int pawnIdx, int pawnRow) {
+    --tier[pieceIdx];
+    move_pawn_forward(tier, pawnIdx, pawnRow);
+    list = tier_list_insert_head(list, tier);
+    move_pawn_backward(tier, pawnIdx, pawnRow);
+    ++tier[pieceIdx];
+    return list;
+}
+
+static TierList *rm_pawn_pfwd_insert(TierList *list, char *tier, int capturedIdx,
+                                     int capturedRow, int fwdIdx, int fwdRow) {
+    move_pawn_forward(tier, fwdIdx, fwdRow);
+    list = rm_pawn_insert(list, tier, capturedIdx, capturedRow);
+    move_pawn_backward(tier, fwdIdx, fwdRow);
+    return list;
+}
+
+/*************************** END Helper Functions ****************************/

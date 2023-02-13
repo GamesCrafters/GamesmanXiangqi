@@ -84,9 +84,7 @@ static void destroy_dividers() {
 
 static void solver_save_values(const char *tier, uint16_t *values, uint64_t tierSize) {
     FILE *savefile = fopen(tier, "wb");
-    for (uint64_t i = 0; i < tierSize; ++i) {
-        fwrite(values, sizeof(uint16_t), tierSize, savefile);
-    }
+    fwrite(values, sizeof(uint16_t), tierSize, savefile);
     fclose(savefile);
 }
 
