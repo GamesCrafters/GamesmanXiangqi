@@ -9,6 +9,7 @@ SOURCES += \
         main.c \
         misc.c \
         solver.c \
+        tests/tier_test.c \
         tier.c \
         tiersolver.c \
         tiertree.c
@@ -18,6 +19,7 @@ HEADERS += \
     game.h \
     misc.h \
     solver.h \
+    tests/tier_test.h \
     tier.h \
     tiersolver.h \
     tiertree.h \

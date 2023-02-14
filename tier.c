@@ -54,6 +54,8 @@ static TierList *rm_pawn_pfwd_insert(TierList *list, char *tier, int capturedIdx
                                      int capturedRow, int fwdIdx, int fwdRow);
 /******************* End Helper Function Declarations *******************/
 
+/**************************** Tier Utilities ****************************/
+
 TierList *tier_list_insert_head(TierList *list, const char *tier) {
     TierList *newHead = (TierList *)safe_malloc(sizeof(struct TierListElem));
     newHead->next = list;
@@ -61,24 +63,6 @@ TierList *tier_list_insert_head(TierList *list, const char *tier) {
         newHead->tier[i] = tier[i];
     }
     return newHead;
-}
-
-void tier_list_destroy(TierList *list) {
-    struct TierListElem *next;
-    while (list) {
-        next = list->next;
-        free(list);
-        list = next;
-    }
-}
-
-void tier_array_destroy(struct TierArray *array) {
-    if (!array || !array->tiers) return;
-    for (uint8_t i = 0; i < array->size; ++i) {
-        free(array->tiers[i]);
-    }
-    free(array->tiers);
-    array->tiers = NULL;
 }
 
 static void find_pawn_locations(const char *tier, bool *redPRow, bool *blackPRow) {
@@ -272,6 +256,21 @@ TierList *tier_get_child_tier_list(const char *tier) {
     return list;
 }
 
+TierList *tier_get_parent_tier_list(const char *tier) {
+    // TODO
+    (void)tier;
+    return NULL;
+}
+
+void tier_list_destroy(TierList *list) {
+    struct TierListElem *next;
+    while (list) {
+        next = list->next;
+        free(list);
+        list = next;
+    }
+}
+
 /**
  * @brief Returns a dynamic array of child tiers of TIER.
  * The array should be freed by the caller of this function.
@@ -302,6 +301,15 @@ struct TierArray tier_get_child_tier_array(const char *tier) {
     }
     tier_list_destroy(list);
     return array;
+}
+
+void tier_array_destroy(struct TierArray *array) {
+    if (!array || !array->tiers) return;
+    for (uint8_t i = 0; i < array->size; ++i) {
+        free(array->tiers[i]);
+    }
+    free(array->tiers);
+    array->tiers = NULL;
 }
 
 /**
@@ -468,6 +476,8 @@ uint64_t tier_required_mem(const char *tier) {
     return mem - 16ULL;
 }
 
+/**************************** End Tier Utilities ****************************/
+
 /***************************** Helper Functions ******************************/
 
 static void make_triangle(void) {
@@ -557,14 +567,20 @@ static void rm_pawn(char *tier, int pawnIdx, int row) {
 }
 
 static void move_pawn_forward(char *tier, int pawnIdx, int row) {
-    assert(tier[pawnIdx] > '0');
-    int begin, end, i;
-    get_pawn_rbegin_rend(tier, pawnIdx, &begin, &end);
-    // TODO
+    assert(row); // cannot move a row-0 pawn forward.
+    int rbegin, rend, i;
+    get_pawn_rbegin_rend(tier, pawnIdx, &rbegin, &rend);
+    for (i = rbegin; i > rend && tier[i] != '0'+row; --i);
+    assert(tier[i] == '0'+row);
+    --tier[i];
 }
 
-static void move_pawn_backward(char *tier, int idx, int row) {
-    // TODO
+static void move_pawn_backward(char *tier, int pawnIdx, int row) {
+    assert(row < 6); // cannot move a row-6 pawn backward.
+    int begin, end, i;
+    get_pawn_begin_end(tier, pawnIdx, &begin, &end);
+    for (i = begin; i < end && tier[i] != '0'+row; ++i);
+    ++tier[i];
 }
 
 static TierList *rm_insert(TierList *list, char *tier, int idx) {

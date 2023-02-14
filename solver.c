@@ -25,7 +25,7 @@ void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem) {
         stat = solve_tier(solvableTiersHead->tier, nthread, mem);
         if (stat.numLegalPos) {
             /* Solve succeeded. Update tier tree. */
-            parentTiers = parent_tiers(solvableTiersHead->tier);
+            parentTiers = tier_get_parent_tier_list(solvableTiersHead->tier);
             for (walker = parentTiers; walker; walker = walker->next) {
                 tmp = tier_tree_find(walker->tier);
                 if (--tmp->numUnsolvedChildren == 0) {
