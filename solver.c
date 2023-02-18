@@ -15,7 +15,7 @@ static tier_tree_entry_t *get_tail(TierTreeEntryList *list) {
 }
 
 void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem) {
-    TierTreeEntryList *solvableTiersHead = tier_tree_init(nPiecesMax, nthread << 5);
+    TierTreeEntryList *solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
     tier_tree_entry_t *solvableTiersTail = get_tail(solvableTiersHead);
     tier_tree_entry_t *tmp;
     tier_solver_stat_t stat;

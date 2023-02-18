@@ -8,6 +8,8 @@
 #include <string.h>
 
 /*************************** Global Constants ***************************/
+/* 3^10 * 6^2 = 2125764 possible sets of remaining pieces on the board. */
+#define N_REMS 2125764
 /* Max number of remaining pieces of each type. */
 static const char *REM_MAX = "222255222222";
 /* Precalculated hash table number of buckets based on number of tiers. */
@@ -27,15 +29,15 @@ static pthread_mutex_t solvableLock;
 /************************* End Global Variables *************************/
 
 /********************* Helper Function Declarations *********************/
+static void next_rem(char *tier);
 static uint64_t strhash(const char *str);
-static void tier_tree_add(const char *tier, uint8_t nChildren);
 static void tier_tree_add_multithreaded(const char *tier, uint8_t nChildren);
 static void solvable_list_add(const char *tier, TierTreeEntryList **solvable);
 /******************* End Helper Function Declarations *******************/
 
-/******************************* Tree Builder **********************************/
+/******************************* Tier Scanner **********************************/
 
-static void append_black_pawns(char *tier, bool test) {
+static void append_black_pawns(char *tier, void (*func)(const char*)) {
     int begin = 14 + tier[RED_P_IDX] - '0';
     int nump = tier[BLACK_P_IDX] - '0';
     tier[begin - 1] = '_';
@@ -44,16 +46,7 @@ static void append_black_pawns(char *tier, bool test) {
     }
     tier[begin + nump] = '\0';
     while (true) {
-        if (test) {
-            tier_tree_entry_t *e = tier_tree_find(tier);
-            assert(e);
-            assert(e->numUnsolvedChildren == tier_num_child_tiers(tier));
-            assert(tier_tree_remove(tier) == e);
-            free(e);
-            assert(!tier_tree_find(tier));
-        } else {
-            tier_tree_add(tier, tier_num_child_tiers(tier));
-        }
+        if (func && is_legal_tier(tier)) func(tier);
         /* Go to next combination. */
         int i = begin;
         ++tier[begin];
@@ -69,14 +62,14 @@ static void append_black_pawns(char *tier, bool test) {
     }
 }
 
-static void append_red_pawns(char *tier, bool test) {
+static void append_red_pawns(char *tier, void (*func)(const char*)) {
     tier[12] = '_';
     int numP = tier[RED_P_IDX] - '0';
     for (int i = 0; i < numP; ++i) {
         tier[13 + i] = '0';
     }
     while (true) {
-        append_black_pawns(tier, test);
+        append_black_pawns(tier, func);
         /* Go to next combination. */
         int i = 13;
         ++tier[13];
@@ -92,7 +85,7 @@ static void append_red_pawns(char *tier, bool test) {
     }
 }
 
-static void generate_tiers(char *tier, int nPiecesMax, bool test) {
+static void generate_tiers(char *tier, int nPiecesMax, void (*func)(const char*)) {
     int count = 0;
     for (int i = 0; i < 12; ++i) {
         count += tier[i] - '0';
@@ -100,41 +93,18 @@ static void generate_tiers(char *tier, int nPiecesMax, bool test) {
     /* Do not consider tiers that have more pieces
        than allowed on the board. */
     if (count > nPiecesMax) return;
-    append_red_pawns(tier, test);
+    append_red_pawns(tier, func);
 }
 
-static void next_rem(char *tier) {
-    int i = 0;
-    ++tier[0];
-    while (tier[i] > REM_MAX[i]) {
-        /* Carry. */
-        tier[i++] = '0';
-        if (i == 12) break;
-        ++tier[i];
-    }
-}
-
-static void tier_tree_build_tree(int nPiecesMax) {
+void tier_scan_driver(int nPiecesMax, void (*func)(const char*)) {
     char tier[TIER_STR_LENGTH_MAX] = "000000000000"; // 12 digits.
-    /* 3^10 * 6^2 = 2125764 possible sets of remaining pieces on the board. */
-    for (int i = 0; i < 2125764; ++i) {
-        generate_tiers(tier, nPiecesMax, false);
+    for (int i = 0; i < N_REMS; ++i) {
+        generate_tiers(tier, nPiecesMax, func);
         next_rem(tier);
     }
-    printf("total number of buckets: %"PRIu64"\n", nbuckets);
-    printf("total number of elements: %"PRIu64"\n", nelements);
-
-    /* Self-test */
-    char tier2[TIER_STR_LENGTH_MAX] = "000000000000";
-    for (int i = 0; i < 2125764; ++i) {
-        generate_tiers(tier2, nPiecesMax, true);
-        next_rem(tier2);
-    }
-    assert(nelements == 0);
-    printf("tier_tree_build_tree: self-test passed\n");
 }
 
-/***************************** End Tree Builder ********************************/
+/***************************** End Tier Scanner ********************************/
 
 /************************* Tree Builder Multithreaded **************************/
 
@@ -226,9 +196,8 @@ static void *ttbtm_helper(void *_args) {
 static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint64_t nthread) {
     TierTreeEntryList *solvable = NULL;
     char tier[TIER_STR_LENGTH_MAX] = "000000000000";
-    const uint64_t GLOBAL_NUM_REMS = 2125764ULL;
-    char **tiers = (char**)safe_calloc(GLOBAL_NUM_REMS, sizeof(char*));
-    for (uint64_t i = 0; i < GLOBAL_NUM_REMS; ++i) {
+    char **tiers = (char**)safe_calloc(N_REMS, sizeof(char*));
+    for (uint64_t i = 0; i < N_REMS; ++i) {
         tiers[i] = (char*)safe_malloc(TIER_STR_LENGTH_MAX);
         for (int j = 0; j < TIER_STR_LENGTH_MAX; ++j) {
             tiers[i][j] = tier[j];
@@ -236,18 +205,18 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
         next_rem(tier);
     }
 
+    nthread <<= 5;
     pthread_t *tid = (pthread_t*)safe_calloc(nthread, sizeof(pthread_t*));
     ttbtm_helper_args_t *args = (ttbtm_helper_args_t*)safe_malloc(
-                nthread * sizeof(ttbtm_helper_args_t)
-                );
+                nthread * sizeof(ttbtm_helper_args_t));
     pthread_mutex_init(&tree_lock, NULL);
     pthread_mutex_init(&solvableLock, NULL);
 
     for (uint64_t i = 0; i < nthread; ++i) {
-        args[i].begin = i * (GLOBAL_NUM_REMS / nthread);
+        args[i].begin = i * (N_REMS / nthread);
         args[i].end = (i == nthread - 1) ?
-                    GLOBAL_NUM_REMS :
-                    (i + 1) * (GLOBAL_NUM_REMS / nthread);
+                    N_REMS :
+                    (i + 1) * (N_REMS / nthread);
         args[i].tiers = tiers;
         args[i].nPiecesMax = nPiecesMax;
         args[i].solvable = &solvable;
@@ -258,7 +227,7 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
     }
     free(args);
     free(tid);
-    for (uint64_t i = 0; i < GLOBAL_NUM_REMS; ++i) {
+    for (uint64_t i = 0; i < N_REMS; ++i) {
         free(tiers[i]);
     }
     free(tiers);
@@ -353,6 +322,17 @@ tier_tree_entry_t *tier_tree_remove(const char *tier) {
 
 /***************************** Helper Functions ******************************/
 
+static void next_rem(char *tier) {
+    int i = 0;
+    ++tier[0];
+    while (tier[i] > REM_MAX[i]) {
+        /* Carry. */
+        tier[i++] = '0';
+        if (i == 12) break;
+        ++tier[i];
+    }
+}
+
 /**
  * @brief Returns the 64-bit hash of a string.
  * @author Dan Bernstein, http://www.cse.yorku.ca/~oz/hash.html
@@ -364,23 +344,6 @@ static uint64_t strhash(const char *str) {
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
     return hash;
-}
-
-/**
- * @brief Adds a new tier into the tier tree. Note that this function
- * does not check for existing tiers. Therefore, adding an existing
- * tier again results in undefined behavior.
- */
-static void tier_tree_add(const char *tier, uint8_t nChildren) {
-    uint64_t slot = strhash(tier) % nbuckets;
-    tier_tree_entry_t *e = safe_malloc(sizeof(tier_tree_entry_t));
-    e->next = tree[slot];
-    for (int i = 0; i < TIER_STR_LENGTH_MAX; ++i) {
-        e->tier[i] = tier[i];
-    }
-    e->numUnsolvedChildren = nChildren;
-    tree[slot] = e;
-    ++nelements;
 }
 
 /**

@@ -30,6 +30,7 @@ void frontier_destroy(fr_t *frontier) {
     }
 }
 
+// TODO: consider adding an array of locks for each rmt to allow concurrent access.
 bool frontier_add(fr_t *frontier, uint64_t hash, uint16_t rmt) {
     if (frontier->sizes[rmt] == frontier->capacities[rmt]) {
         if (frontier->capacities[rmt]) {
@@ -38,8 +39,7 @@ bool frontier_add(fr_t *frontier, uint64_t hash, uint16_t rmt) {
             frontier->capacities[rmt] = 1ULL;
         }
         uint64_t *newBucket = (uint64_t*)malloc(
-                    frontier->capacities[rmt] * sizeof(uint64_t)
-                    );
+                    frontier->capacities[rmt] * sizeof(uint64_t));
         if (!newBucket) return false;
         for (uint64_t i = 0; i < frontier->sizes[rmt]; ++i) {
             newBucket[i] = frontier->buckets[rmt][i];

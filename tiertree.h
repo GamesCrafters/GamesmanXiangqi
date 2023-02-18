@@ -16,4 +16,5 @@ void tier_tree_destroy(void);
 tier_tree_entry_t *tier_tree_find(const char *tier);
 tier_tree_entry_t *tier_tree_remove(const char *tier);
 
+void tier_scan_driver(int nPiecesMax, void (*func)(const char*));
 #endif // TIERTREE_H

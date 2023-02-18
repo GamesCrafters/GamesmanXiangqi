@@ -13,7 +13,8 @@ enum rem_idx {
     RED_C_IDX,
     BLACK_C_IDX,
     RED_R_IDX,
-    BLACK_R_IDX
+    BLACK_R_IDX,
+    INVALID_IDX
 };
 
 #endif // TYPES_H

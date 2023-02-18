@@ -126,11 +126,12 @@ static void accumulate_dividers(uint8_t nChildTiers) {
     }
 }
 
-static bool process_win_pos(uint16_t childRmt,
-                            const char *childPosTier,
-                            uint64_t childPosHash,
-                            const char *parentPosTier) {
-    parents = game_get_parents(childPosTier, childPosHash, parentPosTier);
+static bool process_lose_pos(uint16_t childRmt,
+                             const char *childPosTier,
+                             uint64_t childPosHash,
+                             const char *parentPosTier,
+                             board_t *board) {
+    parents = game_get_parents(childPosTier, childPosHash, parentPosTier, board);
     if (!parents) return false;
     for (uint8_t i = 0; parents[i] != UINT64_MAX; ++i) {
         /* All parents are win in (childRmt + 1) positions. */
@@ -142,11 +143,12 @@ static bool process_win_pos(uint16_t childRmt,
     return true;
 }
 
-static bool process_lose_pos(uint16_t childRmt,
-                             const char *childPosTier,
-                             uint64_t childPosHash,
-                             const char *parentPosTier) {
-    parents = game_get_parents(childPosTier, childPosHash, parentPosTier);
+static bool process_win_pos(uint16_t childRmt,
+                            const char *childPosTier,
+                            uint64_t childPosHash,
+                            const char *parentPosTier,
+                            board_t *board) {
+    parents = game_get_parents(childPosTier, childPosHash, parentPosTier, board);
     if (!parents) return false;
     for (uint8_t i = 0; parents[i] != UINT64_MAX; ++i) {
         /* If this child position is the last undecided child of parent position,
@@ -160,6 +162,16 @@ static bool process_lose_pos(uint16_t childRmt,
     return true;
 }
 
+/**
+ * @brief Solves TIER and returns solver statistics.
+ * @param tier: tier to be solved.
+ * @param nthread: number of physical threads to use.
+ * @param mem: amount of available physical memory in Bytes.
+ * @return Solver statistics including number of valid positions,
+ * number of winning and losing positions, and the longest distance
+ * to a red/black win.
+ * @todo Implement solver statistics, parallelize.
+ */
 tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) {
     (void)nthread; // TODO: parallelize.
     bool success;               // Success flag.
@@ -167,6 +179,7 @@ tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) 
     uint16_t rmt;               // Frontier remoteness iterator.
     uint64_t childTierSize;     // Holds the size of a child tier.
     uint64_t i, hash;           // Iterators.
+    board_t board;              // Reuse this board for all children/parent generation.
 
     /* STEP 0: INITIALIZE. */
     tierRequiredMem = tier_required_mem(tier);
@@ -205,8 +218,9 @@ tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) 
 
     /* STEP 3: COUNT NUMBER OF CHILDREN OF ALL POSITIONS IN
      * CURRENT TIER AND LOAD PRIMITIVE POSITIONS INTO FRONTIER. */
+    memset(board.layout, '-', 90);
     for (hash = 0; hash < tierSize; ++hash) {
-        nUndChild[hash] = game_num_child_pos(tier, hash);
+        nUndChild[hash] = game_num_child_pos(tier, hash, &board);
         if (!nUndChild[hash]) {
             frontier_add(&loseFR, hash, 0);
         }
@@ -219,11 +233,11 @@ tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) 
         i = 0;
         /* Process losing positions loaded from child tiers. */
         for (childIdx = 0; childIdx < childTiers.size; ++childIdx) {
-            success = process_win_pos(rmt, childTiers.tiers[childIdx], loseFR.buckets[rmt][i], tier);
+            success = process_lose_pos(rmt, childTiers.tiers[childIdx], loseFR.buckets[rmt][i], tier, &board);
             if (!success) goto bail_out;
         }
         /* Process losing positions in current tier. */
-        success = process_win_pos(rmt, tier, loseFR.buckets[rmt][i], NULL);
+        success = process_lose_pos(rmt, tier, loseFR.buckets[rmt][i], NULL, &board);
         if (!success) goto bail_out;
 
         /* Process winFR. */
@@ -231,12 +245,12 @@ tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) 
         /* Process winning positions loaded from child tiers. */
         for (childIdx = 0; childIdx < childTiers.size; ++childIdx) {
             for (; i < winDivider[rmt][childIdx]; ++i) {
-                success = process_lose_pos(rmt, childTiers.tiers[childIdx], winFR.buckets[rmt][i], tier);
+                success = process_win_pos(rmt, childTiers.tiers[childIdx], winFR.buckets[rmt][i], tier, &board);
                 if (!success) goto bail_out;
             }
         }
         /* Process winning positions in current tier. */
-        success = process_lose_pos(rmt, tier, winFR.buckets[rmt][i], NULL);
+        success = process_win_pos(rmt, tier, winFR.buckets[rmt][i], NULL, &board);
         if (!success) goto bail_out;
     }
     destroy_FR();
