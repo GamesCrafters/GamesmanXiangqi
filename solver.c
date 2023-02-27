@@ -28,7 +28,7 @@ void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem) {
             parentTiers = tier_get_parent_tier_list(solvableTiersHead->tier);
             for (walker = parentTiers; walker; walker = walker->next) {
                 tmp = tier_tree_find(walker->tier);
-                if (--tmp->numUnsolvedChildren == 0) {
+                if (tmp && --tmp->numUnsolvedChildren == 0) {
                     tmp = tier_tree_remove(walker->tier);
                     solvableTiersTail->next = tmp;
                     tmp->next = NULL;
@@ -50,7 +50,7 @@ void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem) {
         solvableTiersHead = solvableTiersHead->next;
         free(tmp);
     }
-    printf("solve_local: solver done.");
+    printf("solve_local: solver done.\n");
 }
 
 

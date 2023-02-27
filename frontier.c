@@ -17,16 +17,13 @@ void frontier_destroy(fr_t *frontier) {
                 free(frontier->buckets[i]);
             }
         }
-        free(frontier->buckets);
-        frontier->buckets = NULL;
+        free(frontier->buckets); frontier->buckets = NULL;
     }
     if (frontier->capacities) {
-        free(frontier->capacities);
-        frontier->capacities = NULL;
+        free(frontier->capacities); frontier->capacities = NULL;
     }
     if (frontier->sizes) {
-        free(frontier->sizes);
-        frontier->sizes = NULL;
+        free(frontier->sizes); frontier->sizes = NULL;
     }
 }
 
@@ -52,6 +49,5 @@ bool frontier_add(fr_t *frontier, uint64_t hash, uint16_t rmt) {
 }
 
 void frontier_free(fr_t *frontier, uint16_t rmt) {
-    free(frontier->buckets[rmt]);
-    frontier->buckets[rmt] = NULL;
+    free(frontier->buckets[rmt]); frontier->buckets[rmt] = NULL;
 }

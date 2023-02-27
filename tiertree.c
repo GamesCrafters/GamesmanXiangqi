@@ -1,6 +1,6 @@
 #include "misc.h"
 #include "tiertree.h"
-#include "types.h"
+#include "common.h"
 #include <assert.h>
 #include <pthread.h>
 #include <stdbool.h>
