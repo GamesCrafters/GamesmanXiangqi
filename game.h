@@ -53,4 +53,6 @@ uint64_t hash(const char *tier, const board_t *board);
 bool unhash(board_t *board, const char *tier, uint64_t hash);
 void clear_board(board_t *board);
 
+void print_board(board_t *board);
+
 #endif // GAME_H

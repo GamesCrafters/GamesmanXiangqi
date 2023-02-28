@@ -117,6 +117,7 @@ uint8_t game_num_child_pos(const char *tier, uint64_t hash, board_t *board) {
         }
         count += nmoves;
     }
+//    if (!count) print_board(board);
     clear_board(board);
     return count;
 }
@@ -662,7 +663,7 @@ static uint8_t num_moves(board_t *board, int8_t idx, bool testOnly) {
         for (i = 0; i <= 1; ++i) {
             j = 1 - i;
             nmoves += is_valid_move(board, idx, i, j);
-            nmoves += is_valid_move(board, idx, i, j);
+            nmoves += is_valid_move(board, idx, -i, -j);
         }
         break;
 
@@ -1187,3 +1188,52 @@ static void hash_uncruncher(uint64_t hash, board_t *board, uint8_t *piecesSizes,
 }
 
 /******************** End Helper Function Definitions *******************/
+
+static const char pieceMapping[INVALID_IDX + 3] = {'K','k','A','a','B','b','P','p','N','n','C','c','R','r',' '};
+
+void print_board(board_t *board) {
+    char graph[19][18] = {
+        " - - - - - - - - ",
+        "| | | |\\|/| | | |",
+        " - - - - - - - - ",
+        "| | | |/|\\| | | |",
+        " - - - - - - - - ",
+        "| | | | | | | | |",
+        " - - - - - - - - ",
+        "| | | | | | | | |",
+        " - - - - - - - - ",
+        "|     RIVER     |",
+        " - - - - - - - - ",
+        "| | | | | | | | |",
+        " - - - - - - - - ",
+        "| | | | | | | | |",
+        " - - - - - - - - ",
+        "| | | |\\|/| | | |",
+        " - - - - - - - - ",
+        "| | | |/|\\| | | |",
+        " - - - - - - - - "
+    };
+    int8_t i;
+    for (i = 0; i < BOARD_ROWS*BOARD_COLS; ++i) {
+        int8_t row = i / BOARD_COLS;
+        int8_t col = i % BOARD_COLS;
+        graph[row<<1][col<<1] = pieceMapping[board->layout[i] + 2];
+    }
+    for (i = 0; i < 20; ++i) {
+        printf("%s\n", graph[i]);
+    }
+    printf("\n");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
