@@ -205,7 +205,7 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
         next_rem(tier);
     }
 
-    nthread <<= 5;
+//    nthread <<= 5;
     pthread_t *tid = (pthread_t*)safe_calloc(nthread, sizeof(pthread_t*));
     ttbtm_helper_args_t *args = (ttbtm_helper_args_t*)safe_malloc(
                 nthread * sizeof(ttbtm_helper_args_t));
@@ -238,10 +238,8 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
     printf("total number of buckets: %"PRIu64"\n", nbuckets);
     printf("total number of elements: %"PRIu64"\n", nelements);
     printf("solvable tiers: ");
-    int solvableCount = 0;
     TierTreeEntryList *walker;
     for (walker = solvable; walker; walker = walker->next) {
-        ++solvableCount;
         printf("[%s] ", walker->tier);
     }
     printf("\n");
@@ -253,7 +251,8 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
 /**************************** Tree Utilities *******************************/
 
 /**
- * @brief Initilizes and builds the entire tier tree. Does nothing
+ * @brief Initilizes and builds the entire tier tree, returning a
+ * list of immediately solvable tiers. Does nothing and returns NULL
  * if tier tree has already been initialized.
  */
 TierTreeEntryList *tier_tree_init(uint8_t nPiecesMax, uint64_t nthread) {
