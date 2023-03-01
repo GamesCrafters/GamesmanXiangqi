@@ -117,7 +117,7 @@ uint8_t game_num_child_pos(const char *tier, uint64_t hash, board_t *board) {
         }
         count += nmoves;
     }
-//    if (!count) print_board(board);
+    // if (!count) print_board(board);
     clear_board(board);
     return count;
 }
@@ -145,7 +145,7 @@ pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parent
                              tier_change_t change, board_t *board) {
     pos_array_t parents;
     memset(&parents, 0, sizeof(parents));
-    unhash(board, tier, hash);
+    unhash(board, tier, hash); // TODO: check for malloc failure.
 
     /* Return empty parents array if turn does not match tier change. */
     if ((!board->blackTurn && (is_black(change.captureIdx) || is_red(change.pawnIdx))) ||
@@ -210,6 +210,21 @@ bail_out:
     return parents;
 }
 
+inline bool game_is_black_turn(uint64_t hash) {
+    return (hash & 1);
+}
+
+/**
+ * @brief Returns the hash of BOARD in TIER. Returns ILLEGAL_HASH if fails
+ * to allocate space for intermediate steps.
+ */
+uint64_t hash(const char *tier, const board_t *board) {
+    uint64_t *steps = board_to_steps(tier, board);
+    uint64_t res = steps_to_hash(tier, steps);
+    free(steps);
+    return res;
+}
+
 // Assumes board->layout is pre-allocated and contains all BOARD_EMPTY_CELL.
 /**
  * @brief Unhashes TIER and HASH to BOARD, which is assumed to be empty
@@ -224,15 +239,17 @@ bool unhash(board_t *board, const char *tier, uint64_t hash) {
     return success;
 }
 
-/**
- * @brief Returns the hash of BOARD in TIER. Returns ILLEGAL_HASH if fails
- * to allocate space for intermediate steps.
- */
-uint64_t hash(const char *tier, const board_t *board) {
-    uint64_t *steps = board_to_steps(tier, board);
-    uint64_t res = steps_to_hash(tier, steps);
-    free(steps);
-    return res;
+static void clear_board_helper(piece_t *pieces, int8_t *layout) {
+    for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+        layout[pieces[i].row*BOARD_COLS + pieces[i].col] = BOARD_EMPTY_CELL;
+    }
+    pieces[0].token = BOARD_EMPTY_CELL;
+}
+
+void clear_board(board_t *board) {
+    clear_board_helper(board->redPieces, board->layout);
+    clear_board_helper(board->blackPieces, board->layout);
+    board->valid = true;
 }
 
 /************************** End Game Utilities **************************/
@@ -688,13 +705,13 @@ static uint8_t num_moves(board_t *board, int8_t idx, bool testOnly) {
 
         /* Horizontal moves. */
         for (j = -1; j <= 1; j += 2) {
-            if (is_opponent_king(board, row, col+j)) return ILLEGAL_NUM_MOVES;
+            if (in_board(row, col+j) && is_opponent_king(board, row, col+j)) return ILLEGAL_NUM_MOVES;
             nmoves += !testOnly && is_valid_move(board, idx, 0, j);
         }
 
         /* Forward move. */
-        i = - 1 + ((piece == BOARD_BLACK_PAWN) << 1);
-        if (is_opponent_king(board, row+i, col)) return ILLEGAL_NUM_MOVES;
+        i = -1 + ((piece == BOARD_BLACK_PAWN) << 1);
+        if (in_board(row + i, col) && is_opponent_king(board, row+i, col)) return ILLEGAL_NUM_MOVES;
         nmoves += !testOnly && is_valid_move(board, idx, i, 0);
         break;
 
@@ -775,19 +792,6 @@ static uint8_t num_moves(board_t *board, int8_t idx, bool testOnly) {
     return nmoves;
 }
 
-static void clear_board_helper(piece_t *pieces, int8_t *layout) {
-    for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
-        layout[pieces[i].row*BOARD_COLS + pieces[i].col] = BOARD_EMPTY_CELL;
-    }
-    pieces[0].token = BOARD_EMPTY_CELL;
-}
-
-void clear_board(board_t *board) {
-    clear_board_helper(board->redPieces, board->layout);
-    clear_board_helper(board->blackPieces, board->layout);
-    board->valid = true;
-}
-
 static void pieces_shift_left(piece_t *pieces, int8_t i) {
     while (pieces[i].token != BOARD_EMPTY_CELL) {
         pieces[i] = pieces[i + 1];
@@ -811,13 +815,14 @@ static void pieces_insert(piece_t *pieces, int8_t token, int8_t row, int8_t col)
  */
 static void move_piece(board_t *board, int8_t destRow, int8_t destCol,
                        int8_t srcRow, int8_t srcCol, int8_t replace) {
+    // TODO: rename these!
     int8_t destIdx = destRow*BOARD_COLS + destCol;
     int8_t srcIdx = srcRow*BOARD_COLS + srcCol;
     int8_t moving = layout_at(board->layout, srcRow, srcCol);
     int8_t capturing = layout_at(board->layout, destRow, destCol);
     piece_t *movingPieces, *capturingPieces;
 
-    if (is_red(srcIdx)) {
+    if (is_red(moving)) {
         movingPieces = board->redPieces;
         capturingPieces = board->blackPieces;
     } else {
@@ -861,33 +866,11 @@ static void move_piece_append(pos_array_t *parents,
     int8_t destIdx = destRow*BOARD_COLS + destCol;
     int8_t srcIdx = srcRow*BOARD_COLS + srcCol;
 
-    /* Since hash() only looks at layout and king positions,
-       there is no need to update other pieces in the arrays. */
-    if (board->layout[srcIdx] == BOARD_RED_KING) {
-        board->redPieces[0].row = destRow;
-        board->redPieces[0].col = destCol;
-    } else if (board->layout[srcIdx] == BOARD_RED_KING) {
-        board->blackPieces[0].row = destRow;
-        board->blackPieces[0].col = destCol;
-    }
-    board->layout[destIdx] = board->layout[srcIdx];
-    board->layout[srcIdx] = replace;
-    board->blackTurn = !board->blackTurn;
-
+    move_piece(board, destRow, destCol, srcRow, srcCol, replace);
     if (is_legal_pos(board)) {
         parents->array[parents->size++] = hash(tier, board);
     }
-
-    board->blackTurn = !board->blackTurn;
-    board->layout[srcIdx] = board->layout[destIdx];
-    board->layout[destIdx] = BOARD_EMPTY_CELL;
-    if (board->layout[srcIdx] == BOARD_RED_KING) {
-        board->redPieces[0].row = srcRow;
-        board->redPieces[0].col = srcCol;
-    } else if (board->layout[srcIdx] == BOARD_RED_KING) {
-        board->blackPieces[0].row = srcRow;
-        board->blackPieces[0].col = srcCol;
-    }
+    move_piece(board, srcRow, srcCol, destRow, destCol, BOARD_EMPTY_CELL);
 }
 
 /**
@@ -923,6 +906,7 @@ static scope_t get_scope(int8_t piece) {
     case BOARD_RED_KNIGHT: case BOARD_BLACK_KNIGHT:
     case BOARD_RED_CANNON: case BOARD_BLACK_CANNON:
     case BOARD_RED_ROOK: case BOARD_BLACK_ROOK:
+    case BOARD_EMPTY_CELL:
         scope.rowMin = 0; scope.colMin = 0;
         scope.rowMax = 9; scope.colMax = 8;
         break;
@@ -1057,7 +1041,7 @@ static void add_parents(pos_array_t *parents, const char *tier,
         exit(1);
     }
 }
-
+// TODO: convert this to hard-coded lookup tables.
 static bool is_valid_slot(int8_t pieceIdx, int8_t row, int8_t col) {
     int8_t layoutIdx = row*BOARD_COLS + col;
     scope_t scope = get_scope(pieceIdx);
@@ -1219,7 +1203,8 @@ void print_board(board_t *board) {
         int8_t col = i % BOARD_COLS;
         graph[row<<1][col<<1] = pieceMapping[board->layout[i] + 2];
     }
-    for (i = 0; i < 20; ++i) {
+    printf("\n");
+    for (i = 0; i < 19; ++i) {
         printf("%s\n", graph[i]);
     }
     printf("\n");

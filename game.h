@@ -49,10 +49,11 @@ uint8_t game_num_child_pos(const char *tier, uint64_t hash, board_t *board);
 pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parentTier,
                              tier_change_t change, board_t *board);
 
+bool game_is_black_turn(uint64_t hash);
+
 uint64_t hash(const char *tier, const board_t *board);
 bool unhash(board_t *board, const char *tier, uint64_t hash);
 void clear_board(board_t *board);
-
 void print_board(board_t *board);
 
 #endif // GAME_H
