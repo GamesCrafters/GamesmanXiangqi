@@ -1,7 +1,7 @@
-#include "game.h"
+#include "../game.h"
 #include "game_test.h"
-#include "tiertree.h"
-#include "common.h"
+#include "../tiertree.h"
+#include "../common.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>

@@ -1,5 +1,5 @@
 #include "tier_test.h"
-#include "tiertree.h"
+#include "../tiertree.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

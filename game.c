@@ -1,5 +1,6 @@
 #include "common.h"
 #include "game.h"
+#include "misc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,14 +68,18 @@ static bool is_legal_pos(board_t *board);
 static bool is_valid_slot(int8_t pieceIdx, int8_t row, int8_t col);
 
 static uint8_t num_moves(board_t *board, int8_t idx, bool testOnly);
+static bool add_children(ext_pos_array_t *children, board_t *board, int8_t idx);
 static scope_t get_scope(int8_t piece);
 static void move_piece(board_t *board, int8_t destRow, int8_t destCol,
                        int8_t srcRow, int8_t srcCol, int8_t replace);
-static void move_piece_append(pos_array_t *parents,
-                              const char *tier, board_t *board,
+static void move_piece_append(ext_pos_array_t *children, board_t *board,
                               int8_t destRow, int8_t destCol,
-                              int8_t srcRow, int8_t srcCol,
-                              int8_t replace);
+                              int8_t srcRow, int8_t srcCol);
+static void undomove_piece_append(pos_array_t *parents,
+                                  const char *tier, board_t *board,
+                                  int8_t destRow, int8_t destCol,
+                                  int8_t srcRow, int8_t srcCol,
+                                  int8_t replace);
 static void add_parents(pos_array_t *parents, const char *tier,
                         board_t *board, int8_t row, int8_t col, int8_t revIdx);
 static bool flying_general_possible(const board_t *board);
@@ -84,7 +89,9 @@ static uint64_t hash_cruncher(const int8_t *layout, const uint8_t *slots, uint8_
                               uint8_t *rems, uint8_t numPieces);
 static void hash_uncruncher(uint64_t hash, board_t *board, uint8_t *piecesSizes,
                             uint8_t *slots, uint8_t numSlots,
-                            int8_t *tokens, uint8_t *rems, uint8_t numTokens);
+                            const int8_t *tokens, uint8_t *rems, uint8_t numTokens);
+
+static void board_to_sa_position(sa_position_t *pos, board_t *board);
 /******************* End Helper Function Declarations *******************/
 
 /**************************** Game Utilities ****************************/
@@ -117,9 +124,32 @@ uint8_t game_num_child_pos(const char *tier, uint64_t hash, board_t *board) {
         }
         count += nmoves;
     }
-    // if (!count) print_board(board);
     clear_board(board);
     return count;
+}
+
+ext_pos_array_t game_get_children(const char *tier, uint64_t hash) {
+    ext_pos_array_t children;
+    board_t board;
+
+    memset(&children, 0, sizeof(children));
+    game_init_board(&board);
+    if (!unhash(&board, tier, hash)) exit(1);
+    if (!board.valid || flying_general_possible(&board)) {
+        children.size = ILLEGAL_POSITION_ARRAY_SIZE;
+        return children;
+    }
+
+    children.array = (sa_position_t*)safe_malloc(NUM_MOVES_MAX * sizeof(sa_position_t));
+    piece_t *pieces = board.blackTurn ? board.blackPieces : board.redPieces;
+    for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+        if (!add_children(&children, &board, i)) {
+            free(children.array); children.array = NULL;
+            children.size = ILLEGAL_POSITION_ARRAY_SIZE;
+            return children;
+        }
+    }
+    return children;
 }
 
 /**
@@ -138,14 +168,19 @@ uint8_t game_num_child_pos(const char *tier, uint64_t hash, board_t *board) {
  * @param board: this global board should be pre-allocated and empty
  * initialized by the caller.
  * @return A PositionArray which contains a pointer to an array of
- * parent position hashes and the size of that array. The array is
+ * parent position hashes and the size of that array. If OOM,
+ * the size of the array is set to ILLEGAL_POSITION_ARRAY_SIZE_OOM
+ * and the array pointer is set to NULL. Otherwise, the array is
  * malloced and should be freed by the caller of this function.
  */
 pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parentTier,
                              tier_change_t change, board_t *board) {
     pos_array_t parents;
     memset(&parents, 0, sizeof(parents));
-    unhash(board, tier, hash); // TODO: check for malloc failure.
+    if (!unhash(board, tier, hash)) {
+        parents.size = ILLEGAL_POSITION_ARRAY_SIZE_OOM;
+        goto bail_out;
+    }
 
     /* Return empty parents array if turn does not match tier change. */
     if ((!board->blackTurn && (is_black(change.captureIdx) || is_red(change.pawnIdx))) ||
@@ -162,7 +197,7 @@ pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parent
     piece_t *pieces = board->blackTurn ? board->redPieces : board->blackPieces;
     parents.array = (uint64_t*)malloc(NUM_MOVES_MAX * sizeof(uint64_t));
     if (!parents.array) {
-        parents.size = ILLEGAL_POSITION_ARRAY_SIZE;
+        parents.size = ILLEGAL_POSITION_ARRAY_SIZE_OOM;
         goto bail_out;
     }
 
@@ -186,12 +221,12 @@ pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parent
                   number are both valid. */
             add_parents(&parents, parentTier, board, row, col, change.captureIdx);
         } else if (pbwd && (token == change.pawnIdx) && (row == change.pawnRow) &&
-                   is_valid_slot(token, destRow, col) &&
+                   is_valid_slot(token, destRow, col) && is_empty(board->layout, destRow, col) &&
                    is_valid_slot(change.captureIdx, row, col) && revOK) {
             /* Move pawn backward: always need to check if token is the pawn to move and
                the destination is a valid position where the pawn can reach. Then check
                the same conditions as above. */
-            move_piece_append(&parents, parentTier, board, destRow, col,
+            undomove_piece_append(&parents, parentTier, board, destRow, col,
                               row, col, change.captureIdx);
         }
     }
@@ -200,7 +235,7 @@ pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parent
     for (uint8_t i = 0; i < parents.size; ++i) {
         if (parents.array[i] == ILLEGAL_HASH) {
             free(parents.array); parents.array = NULL;
-            parents.size = ILLEGAL_POSITION_ARRAY_SIZE;
+            parents.size = ILLEGAL_POSITION_ARRAY_SIZE_OOM;
             break;
         }
     }
@@ -239,6 +274,10 @@ bool unhash(board_t *board, const char *tier, uint64_t hash) {
     return success;
 }
 
+void game_init_board(board_t *board) {
+    memset(board, BOARD_EMPTY_CELL, BOARD_SIZE);
+}
+
 static void clear_board_helper(piece_t *pieces, int8_t *layout) {
     for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
         layout[pieces[i].row*BOARD_COLS + pieces[i].col] = BOARD_EMPTY_CELL;
@@ -249,7 +288,6 @@ static void clear_board_helper(piece_t *pieces, int8_t *layout) {
 void clear_board(board_t *board) {
     clear_board_helper(board->redPieces, board->layout);
     clear_board_helper(board->blackPieces, board->layout);
-    board->valid = true;
 }
 
 /************************** End Game Utilities **************************/
@@ -356,7 +394,7 @@ static uint8_t set_slots(uint8_t *slots, const int8_t *layout, int step, uint8_t
         }
 
     case 14:
-        for (i = 0, j = 0; j < BOARD_ROWS * BOARD_COLS; ++j) {
+        for (i = 0, j = 0; j < BOARD_SIZE; ++j) {
             if (layout[j] >= BOARD_RED_KNIGHT) {
                 slots[i++] = j;
             }
@@ -372,12 +410,13 @@ static bool steps_to_board(board_t *board, const char *tier, uint64_t *steps) {
     if (!steps) return false; // OOM in previous step.
     int step, parity;
     uint8_t i, j, nLessRestrictedP, nMoreRestrictedP;
-    uint8_t slots[BOARD_ROWS * BOARD_COLS];
+    uint8_t slots[BOARD_SIZE];
     int8_t piecesToPlace[7];
     uint8_t rems[7];
     uint8_t piecesSizes[2] = {0, 0};
     uint8_t pawnsPerRow[2 * BOARD_ROWS];
 
+    board->valid = true; // Should an error occurs, set this value to false in that step.
     tier_get_pawns_per_row(tier, pawnsPerRow);
     piecesToPlace[0] = BOARD_EMPTY_CELL; // Empty cell is always the 0-th piece to place.
 
@@ -418,6 +457,11 @@ static bool steps_to_board(board_t *board, const char *tier, uint64_t *steps) {
                 rems[0] = 3; rems[1] = 1; rems[2] = 1;
                 hash_uncruncher(steps[step] - 20ULL, board, piecesSizes,
                                 slots, 5, piecesToPlace, rems, 3);
+                i = 0;
+                while (pieces[i].token != piecesToPlace[1]) ++i;
+                piece_t tmp = pieces[0];
+                pieces[0] = pieces[i];
+                pieces[i] = tmp;
             }
             break;
 
@@ -440,6 +484,11 @@ static bool steps_to_board(board_t *board, const char *tier, uint64_t *steps) {
                 rems[0] = 2; rems[1] = 1; rems[2] = 2;
                 hash_uncruncher(steps[step] - 40ULL, board, piecesSizes,
                                 slots, 5, piecesToPlace, rems, 3);
+                i = 0;
+                while (pieces[i].token != piecesToPlace[1]) ++i;
+                piece_t tmp = pieces[0];
+                pieces[0] = pieces[i];
+                pieces[i] = tmp;
             }
             break;
         }
@@ -524,7 +573,7 @@ static uint64_t *board_to_steps(const char *tier, const board_t *board) {
 
     int step;
     uint8_t i, j;
-    uint8_t slots[BOARD_ROWS * BOARD_COLS];
+    uint8_t slots[BOARD_SIZE];
     uint8_t rems[7];
     uint8_t pawnsPerRow[2 * BOARD_ROWS];
     const piece_t *pieces;
@@ -792,6 +841,161 @@ static uint8_t num_moves(board_t *board, int8_t idx, bool testOnly) {
     return nmoves;
 }
 
+static bool add_children(ext_pos_array_t *children, board_t *board, int8_t idx) {
+    piece_t *pieces = board->blackTurn ? board->blackPieces : board->redPieces;
+    int8_t row = pieces[idx].row;
+    int8_t col = pieces[idx].col;
+    int8_t i, j, encounter;
+    const int8_t piece = layout_at(board->layout, row, col);
+
+    switch (piece) {
+    case BOARD_RED_KING: case BOARD_BLACK_KING:
+        /* A king can never capture the opponent's king. */
+        for (i = 0; i <= 1; ++i) {
+            j = 1 - i;
+            if (is_valid_move(board, idx, i, j)) {
+                move_piece_append(children, board, row+i, col+j, row, col);
+            }
+            if (is_valid_move(board, idx, -i, -j)) {
+                move_piece_append(children, board, row-i, col-j, row, col);
+            }
+        }
+        break;
+
+    case BOARD_RED_ADVISOR: case BOARD_BLACK_ADVISOR:
+        /* An advisor can never capture the opponent's king. */
+        for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) {
+            if (is_valid_move(board, idx, i, j)) {
+                move_piece_append(children, board, row+i, col+j, row, col);
+            }
+        }
+        break;
+
+    case BOARD_RED_BISHOP: case BOARD_BLACK_BISHOP:
+        /* A bishop can never capture the opponent's king. */
+        for (i = -2; i <= 2; i += 4) for (j = -2; j <= 2; j += 4) {
+            if (is_valid_move(board, idx, i, j)) {
+                move_piece_append(children, board, row+i, col+j, row, col);
+            }
+        }
+        break;
+
+    case BOARD_RED_PAWN: case BOARD_BLACK_PAWN:
+        /* A pawn may capture the opponent's king. */
+
+        /* Horizontal moves. */
+        for (j = -1; j <= 1; j += 2) {
+            if (in_board(row, col+j) && is_opponent_king(board, row, col+j)) return false;
+            if (is_valid_move(board, idx, 0, j)) {
+                move_piece_append(children, board, row, col+j, row, col);
+            }
+        }
+
+        /* Forward move. */
+        i = -1 + ((piece == BOARD_BLACK_PAWN) << 1);
+        if (in_board(row + i, col) && is_opponent_king(board, row+i, col)) return false;
+        if (is_valid_move(board, idx, i, 0)) {
+            move_piece_append(children, board, row+i, col, row, col);
+        }
+        break;
+
+    case BOARD_RED_KNIGHT: case BOARD_BLACK_KNIGHT:
+        /* A knight may capture the opponent's king. */
+        for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) {
+            if ((in_board(row + i*2, col+j) &&
+                 is_empty(board->layout, row+i, col) &&
+                 is_opponent_king(board, row + i*2, col+j)) ||
+                    (in_board(row+i, col + j*2) &&
+                     is_empty(board->layout, row, col+j) &&
+                     is_opponent_king(board, row+i, col + j*2))
+                    ) return false;
+            if (is_valid_move(board, idx, i*2, j)) {
+                move_piece_append(children, board, row + i*2, col+j, row, col);
+            }
+            if (is_valid_move(board, idx, i, j*2)) {
+                move_piece_append(children, board, row+i, col + j*2, row, col);
+            }
+        }
+        break;
+
+    case BOARD_RED_CANNON: case BOARD_BLACK_CANNON:
+        /* A cannon may capture the opponent's king. */
+        // up
+        for (i = -1, encounter = 0; in_board(row+i, col) && encounter < 2; --i) {
+            encounter += !is_empty(board->layout, row+i, col);
+            if (encounter == 2 && is_opponent_king(board, row+i, col)) return false;
+            if (!(encounter & 1) && is_valid_move(board, idx, i, 0)) {
+                move_piece_append(children, board, row+i, col, row, col);
+            }
+        }
+        // down
+        for (i = 1, encounter = 0; in_board(row+i, col) && encounter < 2; ++i) {
+            encounter += !is_empty(board->layout, row+i, col);
+            if (encounter == 2 && is_opponent_king(board, row+i, col)) return false;
+            if (!(encounter & 1) && is_valid_move(board, idx, i, 0)) {
+                move_piece_append(children, board, row+i, col, row, col);
+            }
+        }
+        // left
+        for (j = -1, encounter = 0; in_board(row, col+j) && encounter < 2; --j) {
+            encounter += !is_empty(board->layout, row, col+j);
+            if (encounter == 2 && is_opponent_king(board, row, col+j)) return false;
+            if (!(encounter & 1) && is_valid_move(board, idx, 0, j)) {
+                move_piece_append(children, board, row, col+j, row, col);
+            }
+        }
+        // right
+        for (j = 1, encounter = 0; in_board(row, col+j) && encounter < 2; ++j) {
+            encounter += !is_empty(board->layout, row, col+j);
+            if (encounter == 2 && is_opponent_king(board, row, col+j)) return false;
+            if (!(encounter & 1) && is_valid_move(board, idx, 0, j)) {
+                move_piece_append(children, board, row, col+j, row, col);
+            }
+        }
+        break;
+
+    case BOARD_RED_ROOK: case BOARD_BLACK_ROOK:
+        // up
+        for (i = -1, encounter = 0; in_board(row+i, col) && encounter < 1; --i) {
+            encounter += !is_empty(board->layout, row+i, col);
+            if (is_opponent_king(board, row+i, col)) return false;
+            if (is_valid_move(board, idx, i, 0)) {
+                move_piece_append(children, board, row+i, col, row, col);
+            }
+        }
+        // down
+        for (i = 1, encounter = 0; in_board(row+i, col) && encounter < 1; ++i) {
+            encounter += !is_empty(board->layout, row+i, col);
+            if (is_opponent_king(board, row+i, col)) return false;
+            if (is_valid_move(board, idx, i, 0)) {
+                move_piece_append(children, board, row+i, col, row, col);
+            }
+        }
+        // left
+        for (j = -1, encounter = 0; in_board(row, col+j) && encounter < 1; --j) {
+            encounter += !is_empty(board->layout, row, col+j);
+            if (is_opponent_king(board, row, col+j)) return false;
+            if (is_valid_move(board, idx, 0, j)) {
+                move_piece_append(children, board, row, col+j, row, col);
+            }
+        }
+        // right
+        for (j = 1, encounter = 0; in_board(row, col+j) && encounter < 1; ++j) {
+            encounter += !is_empty(board->layout, row, col+j);
+            if (is_opponent_king(board, row, col+j)) return false;
+            if (is_valid_move(board, idx, 0, j)) {
+                move_piece_append(children, board, row, col+j, row, col);
+            }
+        }
+        break;
+
+    default:
+        printf("game.c::num_moves: invalid piece on board.layout\n");
+        exit(1);
+    }
+    return true;
+}
+
 static void pieces_shift_left(piece_t *pieces, int8_t i) {
     while (pieces[i].token != BOARD_EMPTY_CELL) {
         pieces[i] = pieces[i + 1];
@@ -857,15 +1061,21 @@ static void move_piece(board_t *board, int8_t destRow, int8_t destCol,
     board->blackTurn = !board->blackTurn;
 }
 
-// src is the piece to undoMove, dest is the empty space that it undoMoves to.
-static void move_piece_append(pos_array_t *parents,
-                              const char *tier, board_t *board,
+static void move_piece_append(ext_pos_array_t *children, board_t *board,
                               int8_t destRow, int8_t destCol,
-                              int8_t srcRow, int8_t srcCol,
-                              int8_t replace) {
-    int8_t destIdx = destRow*BOARD_COLS + destCol;
-    int8_t srcIdx = srcRow*BOARD_COLS + srcCol;
+                              int8_t srcRow, int8_t srcCol) {
+    int8_t hold = layout_at(board->layout, destRow, destCol);
+    move_piece(board, destRow, destCol, srcRow, srcCol, BOARD_EMPTY_CELL);
+    board_to_sa_position(&children->array[children->size++], board);
+    move_piece(board, srcRow, srcCol, destRow, destCol, hold);
+}
 
+// src is the piece to undoMove, dest is the empty space that it undoMoves to.
+static void undomove_piece_append(pos_array_t *parents,
+                                  const char *tier, board_t *board,
+                                  int8_t destRow, int8_t destCol,
+                                  int8_t srcRow, int8_t srcCol,
+                                  int8_t replace) {
     move_piece(board, destRow, destCol, srcRow, srcCol, replace);
     if (is_legal_pos(board)) {
         parents->array[parents->size++] = hash(tier, board);
@@ -942,10 +1152,10 @@ static void add_parents(pos_array_t *parents, const char *tier,
         for (i = 0; i <= 1; ++i) {
             j = 1 - i;
             if (in_scope(scope, row+i, col+j) && is_empty(layout, row+i, col+j)) {
-                move_piece_append(parents, tier, board, row+i, col+j, row, col, revIdx);
+                undomove_piece_append(parents, tier, board, row+i, col+j, row, col, revIdx);
             }
             if (in_scope(scope, row-i, col-j) && is_empty(layout, row-i, col-j)) {
-                move_piece_append(parents, tier, board, row-i, col-j, row, col, revIdx);
+                undomove_piece_append(parents, tier, board, row-i, col-j, row, col, revIdx);
             }
         }
         break;
@@ -953,7 +1163,7 @@ static void add_parents(pos_array_t *parents, const char *tier,
     case BOARD_RED_ADVISOR: case BOARD_BLACK_ADVISOR:
         for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) {
             if (in_scope(scope, row+i, col+j) && is_empty(layout, row+i, col+j)) {
-                move_piece_append(parents, tier, board, row+i, col+j, row, col, revIdx);
+                undomove_piece_append(parents, tier, board, row+i, col+j, row, col, revIdx);
             }
         }
         break;
@@ -963,7 +1173,7 @@ static void add_parents(pos_array_t *parents, const char *tier,
             /* Also need to check if the blocking point is empty. */
             if (in_scope(scope, row+i, col+j) && is_empty(layout, row+i, col+j) &&
                     is_empty(layout, row + i/2, col + j/2)) {
-                move_piece_append(parents, tier, board, row+i, col+j, row, col, revIdx);
+                undomove_piece_append(parents, tier, board, row+i, col+j, row, col, revIdx);
             }
         }
         break;
@@ -971,7 +1181,7 @@ static void add_parents(pos_array_t *parents, const char *tier,
     case BOARD_RED_PAWN: case BOARD_BLACK_PAWN:
         for (j = -1; j <= 1; j += 2) {
             if (in_scope(scope, row, col+j) && is_empty(layout, row, col+j)) {
-                move_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
+                undomove_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
             }
         }
         break;
@@ -981,10 +1191,10 @@ static void add_parents(pos_array_t *parents, const char *tier,
             /* If the blocking point (row+i, col+j) is empty. */
             if (in_scope(scope, row+i, col+j) && is_empty(layout, row+i, col+j)) {
                 if (in_scope(scope, row + i*2, col+j) && is_empty(layout, row + i*2, col+j)) {
-                    move_piece_append(parents, tier, board, row + i*2, col+j, row, col, revIdx);
+                    undomove_piece_append(parents, tier, board, row + i*2, col+j, row, col, revIdx);
                 }
                 if (in_scope(scope, row+i, col + j*2) && is_empty(layout, row+i, col + j*2)) {
-                    move_piece_append(parents, tier, board, row+i, col + j*2, row, col, revIdx);
+                    undomove_piece_append(parents, tier, board, row+i, col + j*2, row, col, revIdx);
                 }
             }
         }
@@ -996,22 +1206,22 @@ static void add_parents(pos_array_t *parents, const char *tier,
             // up
             for (i = -1, encounter = 0; in_scope(scope, row+i, col) && encounter < 2; --i) {
                 if (!is_empty(layout, row+i, col)) ++encounter;
-                else if (encounter) move_piece_append(parents, tier, board, row+i, col, row, col, revIdx);
+                else if (encounter) undomove_piece_append(parents, tier, board, row+i, col, row, col, revIdx);
             }
             // down
             for (i = 1, encounter = 0; in_scope(scope, row+i, col) && encounter < 2; ++i) {
                 if (!is_empty(layout, row+i, col)) ++encounter;
-                else if (encounter) move_piece_append(parents, tier, board, row+i, col, row, col, revIdx);
+                else if (encounter) undomove_piece_append(parents, tier, board, row+i, col, row, col, revIdx);
             }
             // left
             for (j = -1, encounter = 0; in_scope(scope, row, col+j) && encounter < 2; --j) {
                 if (!is_empty(layout, row, col+j)) ++encounter;
-                else if (encounter) move_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
+                else if (encounter) undomove_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
             }
             // right
             for (j = 1, encounter = 0; in_scope(scope, row, col+j) && encounter < 2; ++j) {
                 if (!is_empty(layout, row, col+j)) ++encounter;
-                else if (encounter) move_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
+                else if (encounter) undomove_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
             }
             break;
         }
@@ -1020,19 +1230,19 @@ static void add_parents(pos_array_t *parents, const char *tier,
     case BOARD_RED_ROOK: case BOARD_BLACK_ROOK:
         // up
         for (i = -1; in_scope(scope, row+i, col) && is_empty(layout, row+i, col); --i) {
-            move_piece_append(parents, tier, board, row+i, col, row, col, revIdx);
+            undomove_piece_append(parents, tier, board, row+i, col, row, col, revIdx);
         }
         // down
         for (i = 1; in_scope(scope, row+i, col) && is_empty(layout, row+i, col); ++i) {
-            move_piece_append(parents, tier, board, row+i, col, row, col, revIdx);
+            undomove_piece_append(parents, tier, board, row+i, col, row, col, revIdx);
         }
         // left
         for (j = -1; in_scope(scope, row, col+j) && is_empty(layout, row, col+j); --j) {
-            move_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
+            undomove_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
         }
         // right
         for (j = 1; in_scope(scope, row, col+j) && is_empty(layout, row, col+j); ++j) {
-            move_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
+            undomove_piece_append(parents, tier, board, row, col+j, row, col, revIdx);
         }
         break;
 
@@ -1135,7 +1345,7 @@ static uint64_t hash_cruncher(const int8_t *layout, const uint8_t *slots, uint8_
 
 static void hash_uncruncher(uint64_t hash, board_t *board, uint8_t *piecesSizes,
                             uint8_t *slots, uint8_t numSlots,
-                            int8_t *tokens, uint8_t *rems, uint8_t numTokens) {
+                            const int8_t *tokens, uint8_t *rems, uint8_t numTokens) {
     uint64_t prevOffset = 0, currOffset;
     int i, j, pieceIdx, parity;
     piece_t *pieces;
@@ -1171,6 +1381,40 @@ static void hash_uncruncher(uint64_t hash, board_t *board, uint8_t *piecesSizes,
     }
 }
 
+static void board_to_sa_position(sa_position_t *pos, board_t *board) {
+    int8_t i, j, k;
+    uint8_t redPawnRow[7] = {0}, blackPawnRow[7] = {0};
+    memset(pos->tier, '0', 12);
+    /* Index starts from 1 to skip over kings. */
+    for (i = 1; board->redPieces[i].token != BOARD_EMPTY_CELL; ++i) {
+        ++pos->tier[board->redPieces[i].token];
+        if (board->redPieces[i].token == BOARD_RED_PAWN) {
+            ++redPawnRow[board->redPieces[i].row];
+        }
+    }
+    for (i = 1; board->blackPieces[i].token != BOARD_EMPTY_CELL; ++i) {
+        ++pos->tier[board->blackPieces[i].token];
+        if (board->blackPieces[i].token == BOARD_BLACK_PAWN) {
+            ++blackPawnRow[9 - board->blackPieces[i].row];
+        }
+    }
+    k = 12;
+    /* Append red pawns. */
+    pos->tier[k++] = '_';
+    for (i = 6; i >= 0; --i) for (j = 0; j < redPawnRow[i]; ++j) {
+        pos->tier[k++] = '0' + i;
+    }
+
+    /* Append black pawns. */
+    pos->tier[k++] = '_';
+    for (i = 6; i >= 0; --i) for (j = 0; j < blackPawnRow[i]; ++j) {
+        pos->tier[k++] = '0' + i;
+    }
+    pos->tier[k] = '\0';
+
+    pos->hash = hash(pos->tier, board);
+}
+
 /******************** End Helper Function Definitions *******************/
 
 static const char pieceMapping[INVALID_IDX + 3] = {'K','k','A','a','B','b','P','p','N','n','C','c','R','r',' '};
@@ -1198,7 +1442,7 @@ void print_board(board_t *board) {
         " - - - - - - - - "
     };
     int8_t i;
-    for (i = 0; i < BOARD_ROWS*BOARD_COLS; ++i) {
+    for (i = 0; i < BOARD_SIZE; ++i) {
         int8_t row = i / BOARD_COLS;
         int8_t col = i % BOARD_COLS;
         graph[row<<1][col<<1] = pieceMapping[board->layout[i] + 2];
@@ -1209,16 +1453,3 @@ void print_board(board_t *board) {
     }
     printf("\n");
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

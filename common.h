@@ -23,6 +23,9 @@ enum rem_idx {
 #define CHOOSE_ROWS 91
 #define CHOOSE_COLS 13
 
+/* See tiersolver.c for details. */
+#define DRAW_VALUE 32768
+
 void make_triangle(void);
 
 #endif // COMMON_H

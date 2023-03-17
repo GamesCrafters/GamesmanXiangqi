@@ -1,3 +1,4 @@
+#include "db.h"
 #include "frontier.h"
 #include "game.h"
 #include "misc.h"
@@ -25,7 +26,6 @@
 
 #define FR_SIZE (((UINT16_MAX)-1)>>1)
 #define RESERVED_VALUE 0
-#define DRAW_VALUE 32768
 
 tier_solver_stat_t stat;               // Tier solver statistics.
 static fr_t winFR, loseFR;             // Win and lose frontiers.
@@ -84,7 +84,7 @@ static void destroy_dividers() {
 }
 
 static void solver_save_values(const char *tier, uint16_t *values, uint64_t tierSize) {
-    FILE *savefile = fopen(tier, "wb");
+    FILE *savefile = db_fopen_tier(tier, "wb");
     fwrite(values, sizeof(uint16_t), tierSize, savefile);
     fclose(savefile);
 }
@@ -93,7 +93,7 @@ static uint16_t *load_values_from_disk(const char *tier, uint64_t size) {
     FILE *loadfile;
     uint16_t *values = (uint16_t*)malloc(size * sizeof(uint16_t));
     if (!values) return NULL;
-    loadfile = fopen(tier, "rb");
+    loadfile = db_fopen_tier(tier, "rb");
     fread(values, sizeof(uint16_t), size, loadfile);
     fclose(loadfile);
     return values;
@@ -135,7 +135,7 @@ static bool process_lose_pos(uint16_t childRmt, const char *childPosTier,
         /* All parents are win in (childRmt + 1) positions. */
         values[parents.array[i]] = UINT16_MAX - childRmt - 1; // Refer to the value table.
         nUndChild[parents.array[i]] = 0;
-        frontier_add(&winFR, parents.array[i], childRmt + 1);
+        frontier_add(&winFR, parents.array[i], childRmt + 1); // TODO: check for OOM here.
     }
     free(parents.array); parents.array = NULL;
     return true;
@@ -152,7 +152,7 @@ static bool process_win_pos(uint16_t childRmt, const char *childPosTier,
            mark parent as lose in (childRmt + 1). */
         if (--nUndChild[parents.array[i]] == 0) {
             values[parents.array[i]] = childRmt + 2; // Refer to the value table.
-            frontier_add(&loseFR, parents.array[i], childRmt + 1);
+            frontier_add(&loseFR, parents.array[i], childRmt + 1); // TODO: check for OOM here.
         }
     }
     free(parents.array); parents.array = NULL;
@@ -225,7 +225,7 @@ tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) 
     }
 
     /* STEP 4: PUSH FRONTIER UP. */
-    tier_change_t noChange; // Empty tier change placeholder.
+    tier_change_t noChange;
     noChange.captureIdx = noChange.pawnIdx = INVALID_IDX;
     noChange.captureRow = noChange.pawnRow = -1;
     accumulate_dividers(childTiers.size);
