@@ -373,14 +373,14 @@ static uint8_t set_slots(uint8_t *slots, const int8_t *layout, int step, uint8_t
 
     case 4: case 5: case 6: case 11: case 12: case 13:
         for (i = 0; i < BOARD_COLS; ++i) {
-            slots[i] = i + BOARD_COLS*(step - 4); // skip the first (step-4) rows.
+            slots[i] = i + BOARD_COLS*(step - 4); // skip the first (step - 4) rows.
         }
         return BOARD_COLS;
 
     case 7: case 8: case 9: case 10:
         if (!substep) {
             for (j = 0; j < BOARD_COLS; j += 2) { // columns 0, 2, 4, 6, 8.
-                slots[j >> 1] = j + BOARD_COLS*(step - 4); // skip the first (step-4) rows.
+                slots[j >> 1] = j + BOARD_COLS*(step - 4); // skip the first (step - 4) rows.
             }
             return 5;
         } else {
@@ -1329,7 +1329,7 @@ static uint64_t hash_cruncher(const int8_t *layout, const uint8_t *slots, uint8_
     for (i = size - 1; i > 0; --i) {
         pieceOnBoard = layout[slots[i]];
         actualPiece = (pieceOnBoard < pieceMin || pieceOnBoard > pieceMax) ?
-                    BOARD_EMPTY_CELL : layout[slots[i]];
+                    BOARD_EMPTY_CELL : pieceOnBoard;
         pieceIdx = pieceIdxLookup[actualPiece + 2]; // +2 to accommodate the kings.
         for (j = 0; j < pieceIdx; ++j) {
             if (rems[j]) {
