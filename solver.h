@@ -1,7 +1,8 @@
 #ifndef SOLVER_H
 #define SOLVER_H
+#include <stdbool.h>
 #include <stdint.h>
 
-void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem);
+void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force);
 
 #endif // SOLVER_H

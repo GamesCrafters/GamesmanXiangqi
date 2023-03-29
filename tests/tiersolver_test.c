@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 void tiersolver_test_solve_single_tier(const char *tier) {
-    tier_solver_stat_t stat = solve_tier(tier, 1, 2ULL << 30);
+    tier_solver_stat_t stat = solve_tier(tier, 1, 2ULL << 30, true);
     printf("Tier %s:\n", tier);
     printf("total legal positions: %"PRIu64"\n", stat.numLegalPos);
     printf("number of winning positions: %"PRIu64"\n", stat.numWin);

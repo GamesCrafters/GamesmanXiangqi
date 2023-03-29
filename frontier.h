@@ -15,6 +15,5 @@ void frontier_destroy(fr_t *frontier);
 
 bool frontier_add(fr_t *frontier, uint64_t hash, uint16_t rmt);
 void frontier_free(fr_t *frontier, uint16_t rmt);
-uint64_t frontier_get_size(uint16_t rmt);
 
 #endif // FRONTIER_H
