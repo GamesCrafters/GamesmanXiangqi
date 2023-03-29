@@ -84,9 +84,15 @@ static void destroy_dividers() {
 }
 
 static void solver_save_values(const char *tier, uint16_t *values, uint64_t tierSize) {
-    FILE *savefile = db_fopen_tier(tier, "wb");
-    fwrite(values, sizeof(uint16_t), tierSize, savefile);
-    fclose(savefile);
+    /* First save the tier file. */
+    FILE *fp = db_fopen_tier(tier, "wb");
+    fwrite(values, sizeof(uint16_t), tierSize, fp);
+    fclose(fp);
+
+    /* Then save the stat file as a success indicator. */
+    fp = db_fopen_stat(tier, "wb");
+    fwrite(&stat, sizeof(stat), 1, fp);
+    fclose(fp);
 }
 
 static uint16_t *load_values_from_disk(const char *tier, uint64_t size) {
@@ -167,7 +173,7 @@ static bool process_win_pos(uint16_t childRmt, const char *childPosTier,
  * @return Solver statistics including number of valid positions,
  * number of winning and losing positions, and the longest distance
  * to a red/black win.
- * @todo Implement solver statistics, parallelize.
+ * @todo parallelize.
  */
 tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) {
     (void)nthread; // TODO: parallelize.
@@ -179,6 +185,12 @@ tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem) 
     board_t board;              // Reuse this board for all children/parent generation.
 
     /* STEP 0: INITIALIZE. */
+    /* If the given TIER is already solved, skip solving and return. */
+    if (db_check_tier(tier) == DB_TIER_OK) {
+        stat = db_load_stat(tier);
+        return stat;
+    } // TODO: attempt auto fix stat if stat is corrupted.
+
     tierRequiredMem = tier_required_mem(tier);
     tierSize = tier_size(tier);
 
