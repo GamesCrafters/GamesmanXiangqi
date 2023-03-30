@@ -2,12 +2,14 @@
 #define FRONTIER_H
 #include <stdint.h>
 #include <stdbool.h>
+#include <omp.h>
 
 typedef struct Frontier {
+    uint16_t size;
     uint64_t **buckets;
     uint64_t *capacities;
     uint64_t *sizes;
-    uint64_t size;
+    omp_lock_t *locks;
 } fr_t;
 
 void frontier_init(fr_t *frontier, uint16_t size);

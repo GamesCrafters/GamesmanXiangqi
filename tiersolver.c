@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <omp.h>
 
 /**
 0: RESERVED – UNREACHEABLE POSITION
@@ -31,14 +32,14 @@
 
 static const char *kTier = NULL;       // Tier being solved.
 static uint64_t kNthread;              // Number of physical threads.
-tier_solver_stat_t stat;               // Tier solver statistics.
+static tier_solver_stat_t stat;        // Tier solver statistics.
 static fr_t winFR, loseFR;             // Win and lose frontiers.
 static uint64_t **winDivider = NULL;   // Holds the number of positions from each child tier in loseFR (heap).
 static uint64_t **loseDivider = NULL;  // Holds the number of positions from each child tier in winFR (heap).
 struct TierArray childTiers;           // Array of child tiers (heap).
 static uint8_t *nUndChild = NULL;      // Number of undecided child positions array (heap).
-static uint16_t *values = NULL;        // Remoteness value array (heap).
-static pos_array_t parents;            // Holds a list of parent positions of a frontier position. (heap)
+static omp_lock_t nUndChildLock;       // Lock for the above array.
+static uint16_t *values = NULL;        // Remoteness value array (heap). (heap)
 static uint64_t tierSize;              // Number of positions in TIER.
 static board_t board;                  // Reuse this board for all children/parent generation.
 
@@ -57,13 +58,7 @@ static void destroy_FR(void) {
 }
 
 static void init_solver_stat(tier_solver_stat_t *stat) {
-    stat->numLegalPos = 0;
-    stat->numWin = 0;
-    stat->numLose = 0;
-    stat->longestNumStepsToRedWin = 0;
-    stat->longestPosToRedWin = 0;
-    stat->longestNumStepsToBlackWin = 0;
-    stat->longestPosToBlackWin = 0;
+    memset(stat, 0, sizeof(*stat));
 }
 
 static void init_dividers(uint8_t nChildTiers) {
@@ -104,17 +99,20 @@ static bool check_and_load_frontier(uint8_t childIdx, uint64_t hash, uint16_t va
         /* LOSE */
         rmt = val - 1;
         if (!frontier_add(&loseFR, hash, rmt)) return false;
+        #pragma omp atomic
         ++loseDivider[rmt][childIdx];
     } else {
         /* WIN */
         rmt = UINT16_MAX - val;
         if (!frontier_add(&winFR, hash, rmt)) return false;
+        #pragma omp atomic
         ++winDivider[rmt][childIdx];
     }
     return true;
 }
 
 static void accumulate_dividers(uint8_t nChildTiers) {
+    #pragma omp parallel for
     for (uint16_t rmt = 0; rmt < FR_SIZE; ++rmt) {
         for (uint8_t childIdx = 1; childIdx < nChildTiers; ++childIdx) {
             winDivider[rmt][childIdx] += winDivider[rmt][childIdx - 1];
@@ -124,33 +122,58 @@ static void accumulate_dividers(uint8_t nChildTiers) {
 }
 
 static bool process_lose_pos(uint16_t childRmt, const char *childPosTier,
-                             uint64_t childPosHash, const char *parentTier,
+                             uint64_t childPosHash,
                              tier_change_t change, board_t *board) {
-    parents = game_get_parents(childPosTier, childPosHash, parentTier, change, board);
-    if (parents.size == ILLEGAL_POSITION_ARRAY_SIZE) return false; // OOM.
+    uint8_t remChildren;
+    pos_array_t parents = game_get_parents(childPosTier, childPosHash, kTier, change, board);
+    if (parents.size == ILLEGAL_POSITION_ARRAY_SIZE) { // OOM.
+        free(parents.array); parents.array = NULL;
+        return false;
+    }
     for (uint8_t i = 0; i < parents.size; ++i) {
-        if (nUndChild[parents.array[i]] == 0) continue;
+        omp_set_lock(&nUndChildLock);
+        remChildren = nUndChild[parents.array[i]];
+        nUndChild[parents.array[i]] = 0;
+        omp_unset_lock(&nUndChildLock);
+        if (!remChildren) continue;
+
         /* All parents are win in (childRmt + 1) positions. */
         values[parents.array[i]] = UINT16_MAX - childRmt - 1; // Refer to the value table.
-        nUndChild[parents.array[i]] = 0;
-        if (!frontier_add(&winFR, parents.array[i], childRmt + 1)) return false; // OOM.
+        if (!frontier_add(&winFR, parents.array[i], childRmt + 1)) { // OOM.
+            free(parents.array); parents.array = NULL;
+            return false;
+        }
     }
     free(parents.array); parents.array = NULL;
     return true;
 }
 
 static bool process_win_pos(uint16_t childRmt, const char *childPosTier,
-                            uint64_t childPosHash, const char *parentTier,
+                            uint64_t childPosHash,
                             tier_change_t change, board_t *board) {
-    parents = game_get_parents(childPosTier, childPosHash, parentTier, change, board);
-    if (parents.size == ILLEGAL_POSITION_ARRAY_SIZE) return false; // OOM.
+    uint8_t remChildren;
+    pos_array_t parents = game_get_parents(childPosTier, childPosHash, kTier, change, board);
+    if (parents.size == ILLEGAL_POSITION_ARRAY_SIZE) { // OOM.
+        free(parents.array); parents.array = NULL;
+        return false;
+    }
     for (uint8_t i = 0; i < parents.size; ++i) {
-        if (nUndChild[parents.array[i]] == 0) continue;
+        omp_set_lock(&nUndChildLock);
+        if (!nUndChild[parents.array[i]]) {
+            omp_unset_lock(&nUndChildLock);
+            continue;
+        }
+        remChildren = --nUndChild[parents.array[i]];
+        omp_unset_lock(&nUndChildLock);
+
         /* If this child position is the last undecided child of parent position,
            mark parent as lose in (childRmt + 1). */
-        if (--nUndChild[parents.array[i]] == 0) {
+        if (!remChildren) {
             values[parents.array[i]] = childRmt + 2; // Refer to the value table.
-            if (!frontier_add(&loseFR, parents.array[i], childRmt + 1)) return false; // OOM.
+            if (!frontier_add(&loseFR, parents.array[i], childRmt + 1)) { // OOM.
+                free(parents.array); parents.array = NULL;
+                return false;
+            }
         }
     }
     free(parents.array); parents.array = NULL;
@@ -169,31 +192,34 @@ static bool solve_tier_step_0_initialize(const char *tier, uint64_t nthread, uin
     kTier = tier;
     kNthread = nthread;
     tierSize = tier_size(tier);
+    omp_init_lock(&nUndChildLock);
     return true;
 }
 
 static bool solve_tier_step_1_load_children(void) {
     /* STEP 1: LOAD ALL WINNING/LOSING POSITIONS FROM
        ALL CHILD TIERS INTO FRONTIER. */
-    uint8_t childIdx;
-    uint64_t hash, childTierSize;
+    uint64_t childTierSize;
+    bool success = true;
 
     childTiers = tier_get_child_tier_array(kTier); // If OOM, there is a bug.
     init_dividers(childTiers.size); // If OOM, there is a bug.
 
-    /* For each child tier... */
-    for (childIdx = 0; childIdx < childTiers.size; ++childIdx) {
+    /* Child tiers must be processed in series, otherwise the frontier
+       dividers wouldn't work. */
+    for (uint8_t childIdx = 0; childIdx < childTiers.size; ++childIdx) {
         /* Load child tier from disk */
         childTierSize = tier_size(childTiers.tiers[childIdx]);
         values = load_values_from_disk(childTiers.tiers[childIdx], childTierSize);
         if (!values) return false;
 
         /* Scan child tier and load winning/losing positions into frontier. */
-        for (hash = 0; hash < childTierSize; ++hash) {
-            if (!check_and_load_frontier(childIdx, hash, values[hash])) {
-                return false;
-            }
+        #pragma omp parallel for
+        for (uint64_t hash = 0; hash < childTierSize; ++hash) {
+            #pragma omp atomic
+            success &= check_and_load_frontier(childIdx, hash, values[hash]);
         }
+        if (!success) return false;
         free(values); values = NULL;
     }
     return true;
@@ -209,69 +235,74 @@ static bool solve_tier_step_2_setup_solver_arrays(void) {
 static bool solve_tier_step_3_scan_tier(void) {
     /* STEP 3: COUNT NUMBER OF CHILDREN OF ALL POSITIONS IN
      * CURRENT TIER AND LOAD PRIMITIVE POSITIONS INTO FRONTIER. */
-    uint64_t hash;
+    bool success = true;
     game_init_board(&board);
-    for (hash = 0; hash < tierSize; ++hash) {
+
+    #pragma omp parallel for firstprivate(board)
+    for (uint64_t hash = 0; hash < tierSize; ++hash) {
         nUndChild[hash] = game_num_child_pos(kTier, hash, &board);
-        if (nUndChild[hash] == ILLEGAL_NUM_CHILD_POS_OOM) return false;
+        success &= (nUndChild[hash] != ILLEGAL_NUM_CHILD_POS_OOM);
+        /* If no children, position is primitive lose. Add it to frontier. */
         if (!nUndChild[hash]) {
             values[hash] = 1;
-            if (!frontier_add(&loseFR, hash, 0)) return false;
+            success &= frontier_add(&loseFR, hash, 0);
         }
     }
-    return true;
+    return success;
+}
+
+static uint8_t get_child_idx(uint64_t **divider, uint16_t rmt, uint64_t i) {
+    uint8_t childIdx;
+    for (childIdx = 0; childIdx < childTiers.size; ++childIdx) {
+        if (i < divider[rmt][childIdx]) break;
+    }
+    return childIdx;
 }
 
 static bool solve_tier_step_4_push_frontier_up(void) {
     /* STEP 4: PUSH FRONTIER UP. */
-    bool success;
-    uint8_t childIdx;
-    uint64_t i;
-    tier_change_t noChange;
-    noChange.captureIdx = noChange.pawnIdx = INVALID_IDX;
-    noChange.captureRow = noChange.pawnRow = -1;
+    const tier_change_t noChange = {INVALID_IDX, -1, INVALID_IDX, -1};
+    bool success = true;
 
     accumulate_dividers(childTiers.size);
+    /* Remotenesses must be processed in series. */
     for (uint16_t rmt = 0; rmt < FR_SIZE; ++rmt) {
         /* Process loseFR. */
-        /* Process losing positions loaded from child tiers. */
-        i = 0;
-        for (childIdx = 0; childIdx < childTiers.size; ++childIdx) {
-            for (; i < loseDivider[rmt][childIdx]; ++i) {
-                success = process_lose_pos(rmt, childTiers.tiers[childIdx], loseFR.buckets[rmt][i],
-                                           kTier, childTiers.changes[childIdx], &board);
-                if (!success) return false;
+        #pragma omp parallel for firstprivate(board)
+        for (uint64_t i = 0; i < loseFR.sizes[rmt]; ++i) {
+            uint8_t childIdx = get_child_idx(loseDivider, rmt, i);
+            if (childIdx < childTiers.size) {
+                success &= process_lose_pos(rmt, childTiers.tiers[childIdx], loseFR.buckets[rmt][i],
+                                            childTiers.changes[childIdx], &board);
+            } else {
+                success &= process_lose_pos(rmt, kTier, loseFR.buckets[rmt][i], noChange, &board);
             }
         }
-        /* Process losing positions in current tier. */
-        for (; i < loseFR.sizes[rmt]; ++i) {
-            success = process_lose_pos(rmt, kTier, loseFR.buckets[rmt][i], kTier, noChange, &board);
-            if (!success) return false;
-        }
+        frontier_free(&loseFR, rmt);
 
         /* Process winFR. */
-        /* Process winning positions loaded from child tiers. */
-        i = 0;
-        for (childIdx = 0; childIdx < childTiers.size; ++childIdx) {
-            for (; i < winDivider[rmt][childIdx]; ++i) {
-                success = process_win_pos(rmt, childTiers.tiers[childIdx], winFR.buckets[rmt][i],
-                                          kTier, childTiers.changes[childIdx], &board);
-                if (!success) return false;
-            }
-        }
-        /* Process winning positions in current tier. */
-        for (; i < winFR.sizes[rmt]; ++i) {
-            success = process_win_pos(rmt, kTier, winFR.buckets[rmt][i], kTier, noChange, &board);
-            if (!success) return false;
-            /* Update statistics. */
-            if (game_is_black_turn(winFR.buckets[rmt][i])) {
-                stat.longestPosToBlackWin = winFR.buckets[rmt][i];
-                stat.longestNumStepsToBlackWin = rmt;
+        #pragma omp parallel for firstprivate(board)
+        for (uint64_t i = 0; i < winFR.sizes[rmt]; ++i) {
+            uint8_t childIdx = get_child_idx(winDivider, rmt, i);
+            if (childIdx < childTiers.size) {
+                success &= process_win_pos(rmt, childTiers.tiers[childIdx], winFR.buckets[rmt][i],
+                                           childTiers.changes[childIdx], &board);
             } else {
-                stat.longestPosToRedWin = winFR.buckets[rmt][i];
-                stat.longestNumStepsToRedWin = rmt;
+                success &= process_win_pos(rmt, kTier, winFR.buckets[rmt][i], noChange, &board);
+                
+                /* Update statistics. */
+                bool blackTurn = game_is_black_turn(winFR.buckets[rmt][i]);
+                if (blackTurn && stat.longestNumStepsToBlackWin < rmt) {
+                    stat.longestNumStepsToBlackWin = rmt;
+                    stat.longestPosToBlackWin = winFR.buckets[rmt][i];
+                } else if (!blackTurn && stat.longestNumStepsToRedWin < rmt) {
+                    stat.longestNumStepsToRedWin = rmt;
+                    stat.longestPosToRedWin = winFR.buckets[rmt][i];
+                }
             }
         }
+        frontier_free(&winFR, rmt);
+        if (!success) return false;
     }
     destroy_FR();
     destroy_dividers();
@@ -281,16 +312,22 @@ static bool solve_tier_step_4_push_frontier_up(void) {
 
 static void solve_tier_step_5_mark_draw_positions(void) {
     /* STEP 5: MARK DRAW POSITIONS AND UPDATE STATISTICS. */
+    #pragma omp parallel for
     for (uint64_t i = 0; i < tierSize; ++i) {
         if (nUndChild[i] == ILLEGAL_NUM_CHILD_POS) continue;
         if (nUndChild[i]) {
             values[i] = DRAW_VALUE;
+            #pragma omp atomic
             ++stat.numLegalPos;
         } else if (values[i] < DRAW_VALUE) {
+            #pragma omp atomic
             ++stat.numLose;
+            #pragma omp atomic
             ++stat.numLegalPos;
         } else {
+            #pragma omp atomic
             ++stat.numWin;
+            #pragma omp atomic
             ++stat.numLegalPos;
         }
     }
@@ -337,8 +374,8 @@ static void solve_tier_step_7_cleanup(void) {
     destroy_dividers();
     tier_array_destroy(&childTiers);
     free(nUndChild); nUndChild = NULL;
-    free(parents.array); parents.array = NULL;
     free(values); values = NULL;
+    omp_destroy_lock(&nUndChildLock);
 }
 
 /**
