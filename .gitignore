@@ -4,8 +4,6 @@
 *.autosave
 *.txt
 *.ods
-data
-bin
 .vscode
 *.log
 log
