@@ -5,10 +5,9 @@
 #include <inttypes.h>
 
 // TODO: replace for loops with memcpy.
-// TODO: replace vector implementation mallocs with reallocs.
 // TODO: double check all malloc failures.
 int main() {
     make_triangle();
-    solve_local(1, 1ULL, 2ULL << 30, true);
+    solve_local(3, 1ULL, 2ULL << 30, false);
     return 0;
 }

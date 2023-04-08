@@ -270,6 +270,7 @@ static bool solve_tier_step_4_push_frontier_up(void) {
         /* Process loseFR. */
         #pragma omp parallel for firstprivate(board)
         for (uint64_t i = 0; i < loseFR.sizes[rmt]; ++i) {
+            // TODO: remove this function from the loop.
             uint8_t childIdx = get_child_idx(loseDivider, rmt, i);
             if (childIdx < childTiers.size) {
                 success &= process_lose_pos(rmt, childTiers.tiers[childIdx], loseFR.buckets[rmt][i],
