@@ -118,48 +118,33 @@ static void append_black_pawns_multithread(char *tier, TierTreeEntryList **solva
     tier[begin + nump] = '\0';
     while (true) {
         uint8_t numChildren = tier_num_child_tiers(tier);
-        if (numChildren) {
-            /* Add tier to tier tree if it depends on at least one child tier. */
-            tier_tree_add_multithreaded(tier, numChildren);
-        } else {
-            /* Tier is primitive and can be solved immediately. */
-            solvable_list_add(tier, solvable);
-        }
+
+        /* Add tier to tier tree if it depends on at least one child tier. */
+        if (numChildren) tier_tree_add_multithreaded(tier, numChildren);
+        /* Tier is primitive and can be solved immediately. */
+        else solvable_list_add(tier, solvable);
+
         /* Go to next combination. */
         int i = begin;
         ++tier[begin];
-        while (tier[i] > '6' && i < begin + nump) {
-            ++tier[++i];
-        }
-        if (i == begin + nump) {
-            break;
-        }
-        for (int j = begin; j < i; ++j) {
-            tier[j] = tier[i];
-        }
+        while (tier[i] > '6' && i < begin + nump) ++tier[++i];
+        if (i == begin + nump) break;
+        for (int j = begin; j < i; ++j) tier[j] = tier[i];
     }
 }
 
 static void append_red_pawns_multithread(char *tier, TierTreeEntryList **solvable) {
     tier[12] = '_';
     int numP = tier[RED_P_IDX] - '0';
-    for (int i = 0; i < numP; ++i) {
-        tier[13 + i] = '0';
-    }
+    for (int i = 0; i < numP; ++i) tier[13 + i] = '0';
     while (true) {
         append_black_pawns_multithread(tier, solvable);
         /* Go to next combination. */
         int i = 13;
         ++tier[13];
-        while (tier[i] > '6' && i < 13 + numP) {
-            ++tier[++i];
-        }
-        if (i == 13 + numP) {
-            break;
-        }
-        for (int j = 13; j < i; ++j) {
-            tier[j] = tier[i];
-        }
+        while (tier[i] > '6' && i < 13 + numP) ++tier[++i];
+        if (i == 13 + numP) break;
+        for (int j = 13; j < i; ++j) tier[j] = tier[i];
     }
 }
 
@@ -167,11 +152,7 @@ static void generate_tiers_multithread(char *tier, int nPiecesMax, TierTreeEntry
     /* Do not include tiers that exceed maximum
        number of pieces on board. */
     int count = 0;
-    for (int i = 0; i < 12; ++i) {
-        count += tier[i] - '0';
-    }
-    /* Do not consider tiers that have more pieces
-       than allowed on the board. */
+    for (int i = 0; i < 12; ++i) count += tier[i] - '0';
     if (count > nPiecesMax) return;
     append_red_pawns_multithread(tier, solvable);
 }
@@ -214,22 +195,16 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
 
     for (uint64_t i = 0; i < nthread; ++i) {
         args[i].begin = i * (N_REMS / nthread);
-        args[i].end = (i == nthread - 1) ?
-                    N_REMS :
-                    (i + 1) * (N_REMS / nthread);
+        args[i].end = (i == nthread - 1) ? N_REMS : (i + 1) * (N_REMS / nthread);
         args[i].tiers = tiers;
         args[i].nPiecesMax = nPiecesMax;
         args[i].solvable = &solvable;
         pthread_create(tid + i, NULL, ttbtm_helper, (void*)(args + i));
     }
-    for (uint64_t i = 0; i < nthread; ++i) {
-        pthread_join(tid[i], NULL);
-    }
+    for (uint64_t i = 0; i < nthread; ++i) pthread_join(tid[i], NULL);
     free(args);
     free(tid);
-    for (uint64_t i = 0; i < N_REMS; ++i) {
-        free(tiers[i]);
-    }
+    for (uint64_t i = 0; i < N_REMS; ++i) free(tiers[i]);
     free(tiers);
     pthread_mutex_destroy(&tree_lock);
     pthread_mutex_destroy(&solvableLock);
@@ -278,8 +253,7 @@ void tier_tree_destroy(void) {
             walker = next;
         }
     }
-    free(tree);
-    tree = NULL;
+    free(tree); tree = NULL;
     nbuckets = 0ULL;
     nelements = 0ULL;
 }

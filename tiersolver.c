@@ -39,7 +39,7 @@ static uint64_t **loseDivider = NULL;  // Holds the number of positions from eac
 struct TierArray childTiers;           // Array of child tiers (heap).
 static uint8_t *nUndChild = NULL;      // Number of undecided child positions array (heap).
 static omp_lock_t nUndChildLock;       // Lock for the above array.
-static uint16_t *values = NULL;        // Remoteness value array (heap). (heap)
+static uint16_t *values = NULL;        // Remoteness value array (heap).
 static uint64_t tierSize;              // Number of positions in TIER.
 static board_t board;                  // Reuse this board for all children/parent generation.
 
@@ -87,23 +87,26 @@ static uint16_t *load_values_from_disk(const char *tier, uint64_t size) {
     uint16_t *values = (uint16_t*)malloc(size * sizeof(uint16_t));
     if (!values) return NULL;
     loadfile = db_fopen_tier(tier, "rb");
+    if (!loadfile) {
+        printf("load_values_from_disk: failed to open tier %s\n", tier);
+        exit(1);
+    }
     fread(values, sizeof(uint16_t), size, loadfile);
     fclose(loadfile);
     return values;
 }
 
 static bool check_and_load_frontier(uint8_t childIdx, uint64_t hash, uint16_t val) {
-    uint16_t rmt;
     if (!val || val == DRAW_VALUE) return true;
     if (val < DRAW_VALUE) {
         /* LOSE */
-        rmt = val - 1;
+        uint16_t rmt = val - 1;
         if (!frontier_add(&loseFR, hash, rmt)) return false;
         #pragma omp atomic
         ++loseDivider[rmt][childIdx];
     } else {
         /* WIN */
-        rmt = UINT16_MAX - val;
+        uint16_t rmt = UINT16_MAX - val;
         if (!frontier_add(&winFR, hash, rmt)) return false;
         #pragma omp atomic
         ++winDivider[rmt][childIdx];
@@ -193,13 +196,52 @@ static bool solve_tier_step_0_initialize(const char *tier, uint64_t nthread, uin
     kNthread = nthread;
     tierSize = tier_size(tier);
     omp_init_lock(&nUndChildLock);
+    game_init_board(&board);
     return true;
+}
+
+static bool solve_tier_step_1_0_load_canonical_helper(uint8_t childIdx) {
+    bool success = true, loadFRSuccess = true;
+    uint64_t childTierSize = tier_size(childTiers.tiers[childIdx]);
+    values = load_values_from_disk(childTiers.tiers[childIdx], childTierSize);
+    if (!values) return false; // OOM.
+
+    /* Scan child tier and load winning/losing positions into frontier. */
+    #pragma omp parallel for
+    for (uint64_t hash = 0; hash < childTierSize; ++hash) {
+        loadFRSuccess = check_and_load_frontier(childIdx, hash, values[hash]);
+        #pragma omp atomic
+        success &= loadFRSuccess;
+    }
+    free(values); values = NULL;
+    return success;
+}
+
+static bool solve_tier_step_1_1_load_noncanonical_helper(uint8_t childIdx) {
+    bool success = true, loadFRSuccess = true;
+    struct TierListElem *canonicalTier = tier_get_canonical_tier(childTiers.tiers[childIdx]);
+    if (!canonicalTier) return false; // OOM.
+    uint64_t childTierSize = tier_size(canonicalTier->tier);
+    values = load_values_from_disk(canonicalTier->tier, childTierSize);
+    if (!values) return false; // OOM.
+
+    /* Scan child tier and load winning/losing positions into frontier. */
+    #pragma omp parallel for firstprivate(board)
+    for (uint64_t hash = 0; hash < childTierSize; ++hash) {
+        uint64_t noncanonicalHash = game_get_noncanonical_hash(
+            canonicalTier->tier, hash, childTiers.tiers[childIdx], &board);
+        loadFRSuccess = check_and_load_frontier(childIdx, noncanonicalHash, values[hash]);
+        #pragma omp atomic
+        success &= loadFRSuccess;
+    }
+    free(canonicalTier); canonicalTier = NULL;
+    free(values); values = NULL;
+    return success;
 }
 
 static bool solve_tier_step_1_load_children(void) {
     /* STEP 1: LOAD ALL WINNING/LOSING POSITIONS FROM
        ALL CHILD TIERS INTO FRONTIER. */
-    uint64_t childTierSize;
     bool success = true;
 
     childTiers = tier_get_child_tier_array(kTier); // If OOM, there is a bug.
@@ -209,18 +251,10 @@ static bool solve_tier_step_1_load_children(void) {
        dividers wouldn't work. */
     for (uint8_t childIdx = 0; childIdx < childTiers.size; ++childIdx) {
         /* Load child tier from disk */
-        childTierSize = tier_size(childTiers.tiers[childIdx]);
-        values = load_values_from_disk(childTiers.tiers[childIdx], childTierSize);
-        if (!values) return false;
-
-        /* Scan child tier and load winning/losing positions into frontier. */
-        #pragma omp parallel for
-        for (uint64_t hash = 0; hash < childTierSize; ++hash) {
-            #pragma omp atomic
-            success &= check_and_load_frontier(childIdx, hash, values[hash]);
-        }
+        bool childIsCanonical = tier_is_canonical_tier(childTiers.tiers[childIdx]);
+        if (childIsCanonical) success = solve_tier_step_1_0_load_canonical_helper(childIdx);
+        else success = solve_tier_step_1_1_load_noncanonical_helper(childIdx);
         if (!success) return false;
-        free(values); values = NULL;
     }
     return true;
 }
@@ -236,7 +270,6 @@ static bool solve_tier_step_3_scan_tier(void) {
     /* STEP 3: COUNT NUMBER OF CHILDREN OF ALL POSITIONS IN
      * CURRENT TIER AND LOAD PRIMITIVE POSITIONS INTO FRONTIER. */
     bool success = true;
-    game_init_board(&board);
 
     #pragma omp parallel for firstprivate(board)
     for (uint64_t hash = 0; hash < tierSize; ++hash) {
@@ -346,7 +379,7 @@ static bool solve_tier_step_6_0_check_tier_file(void) {
     fclose(fp);
     MD5_CTX valuectx = MDData(values, tierSize * sizeof(uint16_t));
     if (memcmp(filectx.digest, valuectx.digest, 16)) {
-        printf("fatal error: new solver result does not match old database.\n");
+        printf("fatal error: new solver result does not match old database in tier %s.\n", kTier);
         exit(1);
     }
     printf("md5 test passed.\n");

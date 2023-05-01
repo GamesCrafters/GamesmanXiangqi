@@ -27,6 +27,9 @@ struct TierArray {
 
 bool is_legal_tier(const char *tier);
 
+struct TierListElem *tier_get_canonical_tier(const char *tier);
+bool tier_is_canonical_tier(const char *tier);
+
 TierList *tier_get_child_tier_list(const char *tier);
 TierList *tier_get_parent_tier_list(const char *tier);
 void tier_list_destroy(TierList *list);

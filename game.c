@@ -110,7 +110,7 @@ static void board_to_sa_position(sa_position_t *pos, board_t *board);
 uint8_t game_num_child_pos(const char *tier, uint64_t hash, board_t *board) {
     uint8_t count = 0, nmoves;
     piece_t *pieces;
-    if (!unhash(board, tier, hash)) return ILLEGAL_NUM_CHILD_POS_OOM;
+    if (!game_unhash(board, tier, hash)) return ILLEGAL_NUM_CHILD_POS_OOM;
     if (!board->valid || flying_general_possible(board)) {
         clear_board(board);
         return ILLEGAL_NUM_CHILD_POS;
@@ -134,7 +134,7 @@ ext_pos_array_t game_get_children(const char *tier, uint64_t hash) {
 
     memset(&children, 0, sizeof(children));
     game_init_board(&board);
-    if (!unhash(&board, tier, hash)) exit(1);
+    if (!game_unhash(&board, tier, hash)) exit(1);
     if (!board.valid || flying_general_possible(&board)) {
         children.size = ILLEGAL_POSITION_ARRAY_SIZE;
         return children;
@@ -177,7 +177,7 @@ pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parent
                              tier_change_t change, board_t *board) {
     pos_array_t parents;
     memset(&parents, 0, sizeof(parents));
-    if (!unhash(board, tier, hash)) {
+    if (!game_unhash(board, tier, hash)) {
         parents.size = ILLEGAL_POSITION_ARRAY_SIZE_OOM;
         goto bail_out;
     }
@@ -253,7 +253,7 @@ inline bool game_is_black_turn(uint64_t hash) {
  * @brief Returns the hash of BOARD in TIER. Returns ILLEGAL_HASH if fails
  * to allocate space for intermediate steps.
  */
-uint64_t hash(const char *tier, const board_t *board) {
+uint64_t game_hash(const char *tier, const board_t *board) {
     uint64_t *steps = board_to_steps(tier, board);
     uint64_t res = steps_to_hash(tier, steps);
     free(steps);
@@ -267,15 +267,56 @@ uint64_t hash(const char *tier, const board_t *board) {
  * Returns true no OOM error occurs, false otherwise.
  * @note A HASH is invalid if some pieces are overlapping.
  */
-bool unhash(board_t *board, const char *tier, uint64_t hash) {
+bool game_unhash(board_t *board, const char *tier, uint64_t hash) {
     uint64_t *steps = hash_to_steps(tier, hash);
     bool success = steps_to_board(board, tier, steps);
     free(steps);
     return success;
 }
 
+static void take_pieces_off_and_rotate(piece_t *pieces, int8_t *layout) {
+    for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+        layout[pieces[i].row*BOARD_COLS + pieces[i].col] = BOARD_EMPTY_CELL;
+        pieces[i].token ^= 1;
+        pieces[i].row = BOARD_ROWS - 1 - pieces[i].row;
+        pieces[i].col = BOARD_COLS - 1 - pieces[i].col;
+    }
+}
+
+static void place_pieces(piece_t *pieces, int8_t *layout) {
+    for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+        layout[pieces[i].row*BOARD_COLS + pieces[i].col] = pieces[i].token;
+    }
+}
+
+uint64_t game_get_noncanonical_hash(const char *canonicalTier, uint64_t canonicalHash,
+                                    const char *noncanonicalTier, board_t *board) {
+    game_unhash(board, canonicalTier, canonicalHash);
+
+    /* Take all pieces off the board, swap the color, and rotate by 180 degrees. */
+    take_pieces_off_and_rotate(board->redPieces, board->layout);
+    take_pieces_off_and_rotate(board->blackPieces, board->layout);
+    piece_t tmp[16];
+    memcpy(tmp, board->redPieces, 16*sizeof(piece_t));
+    memcpy(board->redPieces, board->blackPieces, 16*sizeof(piece_t));
+    memcpy(board->blackPieces, tmp, 16*sizeof(piece_t));
+
+    /* Place the new set of pieces on the board. */
+    place_pieces(board->redPieces, board->layout);
+    place_pieces(board->blackPieces, board->layout);
+    board->blackTurn = !board->blackTurn;
+
+    uint64_t res = game_hash(noncanonicalTier, board);
+    clear_board(board);
+    return res;
+}
+
 void game_init_board(board_t *board) {
-    memset(board, BOARD_EMPTY_CELL, BOARD_SIZE);
+    memset(board->layout, BOARD_EMPTY_CELL, BOARD_SIZE);
+    for (uint8_t i = 0; i < 17; ++i) {
+        board->blackPieces[i].token = INVALID_IDX;
+        board->redPieces[i].token = INVALID_IDX;
+    }
 }
 
 static void clear_board_helper(piece_t *pieces, int8_t *layout) {
@@ -416,7 +457,7 @@ static bool steps_to_board(board_t *board, const char *tier, uint64_t *steps) {
     uint8_t piecesSizes[2] = {0, 0};
     uint8_t pawnsPerRow[2 * BOARD_ROWS];
 
-    board->valid = true; // Should an error occurs, set this value to false in that step.
+    board->valid = true; // Should an error occur, set this value to false in that step.
     tier_get_pawns_per_row(tier, pawnsPerRow);
     piecesToPlace[0] = BOARD_EMPTY_CELL; // Empty cell is always the 0-th piece to place.
 
@@ -990,7 +1031,7 @@ static bool add_children(ext_pos_array_t *children, board_t *board, int8_t idx) 
         break;
 
     default:
-        printf("game.c::num_moves: invalid piece on board.layout\n");
+        printf("game.c::add_children: invalid piece on board.layout\n");
         exit(1);
     }
     return true;
@@ -1078,7 +1119,7 @@ static void undomove_piece_append(pos_array_t *parents,
                                   int8_t replace) {
     move_piece(board, destRow, destCol, srcRow, srcCol, replace);
     if (is_legal_pos(board)) {
-        parents->array[parents->size++] = hash(tier, board);
+        parents->array[parents->size++] = game_hash(tier, board);
     }
     move_piece(board, srcRow, srcCol, destRow, destCol, BOARD_EMPTY_CELL);
 }
@@ -1412,7 +1453,7 @@ static void board_to_sa_position(sa_position_t *pos, board_t *board) {
     }
     pos->tier[k] = '\0';
 
-    pos->hash = hash(pos->tier, board);
+    pos->hash = game_hash(pos->tier, board);
 }
 
 /******************** End Helper Function Definitions *******************/

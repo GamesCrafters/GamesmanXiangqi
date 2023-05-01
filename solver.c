@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+static tier_solver_stat_t globalStat;
+
 static tier_tree_entry_t *get_tail(TierTreeEntryList *list) {
     if (!list) {
         return NULL;
@@ -27,55 +29,89 @@ static void print_stat(tier_solver_stat_t stat) {
         "\n", stat.longestNumStepsToBlackWin, stat.longestPosToBlackWin);
 }
 
-static void update_global_stat(tier_solver_stat_t *global, tier_solver_stat_t stat) {
-    global->numWin += stat.numWin;
-    global->numLose += stat.numLose;
-    global->numLegalPos += stat.numLegalPos;
-    if (stat.longestNumStepsToRedWin > global->longestNumStepsToRedWin) {
-        global->longestNumStepsToRedWin = stat.longestNumStepsToRedWin;
-        global->longestPosToRedWin = stat.longestPosToRedWin;
+static void update_global_stat(tier_solver_stat_t stat) {
+    globalStat.numWin += stat.numWin;
+    globalStat.numLose += stat.numLose;
+    globalStat.numLegalPos += stat.numLegalPos;
+    if (stat.longestNumStepsToRedWin > globalStat.longestNumStepsToRedWin) {
+        globalStat.longestNumStepsToRedWin = stat.longestNumStepsToRedWin;
+        globalStat.longestPosToRedWin = stat.longestPosToRedWin;
     }
-    if (stat.longestNumStepsToBlackWin > global->longestNumStepsToBlackWin) {
-        global->longestNumStepsToBlackWin = stat.longestNumStepsToBlackWin;
-        global->longestPosToBlackWin = stat.longestPosToBlackWin;
+    if (stat.longestNumStepsToBlackWin > globalStat.longestNumStepsToBlackWin) {
+        globalStat.longestNumStepsToBlackWin = stat.longestNumStepsToBlackWin;
+        globalStat.longestPosToBlackWin = stat.longestPosToBlackWin;
     }
+}
+
+static bool tier_list_contains(const TierList *list, const char *tier) {
+    for (const struct TierListElem *walker = list; walker; walker = walker->next) {
+        if (!strncmp(walker->tier, tier, TIER_STR_LENGTH_MAX)) return true;
+    }
+    return false;
+}
+
+static void update_tier_tree(const char *solvedTier, tier_tree_entry_t **solvableTiersTail) {
+    tier_tree_entry_t *tmp;
+    TierList *parentTiers = tier_get_parent_tier_list(solvedTier);
+    TierList *canonicalParents = NULL;
+    for (struct TierListElem *walker = parentTiers; walker; walker = walker->next) {
+        /* Update canonical parent's number of unsolved children only. */
+        struct TierListElem *canonical = tier_get_canonical_tier(walker->tier);
+        if (tier_list_contains(canonicalParents, canonical->tier)) {
+            /* It is possible that a child has two parents that are symmetrical
+               to each other. In this case, we should only decrement the child
+               counter once. */
+            free(canonical);
+            continue;
+        }
+        canonical->next = canonicalParents;
+        canonicalParents = canonical;
+
+        tmp = tier_tree_find(canonical->tier);
+        if (tmp && --tmp->numUnsolvedChildren == 0) {
+            tmp = tier_tree_remove(canonical->tier);
+            (*solvableTiersTail)->next = tmp;
+            tmp->next = NULL;
+            *solvableTiersTail = tmp;
+        }
+    }
+    tier_list_destroy(canonicalParents);
+    tier_list_destroy(parentTiers);
 }
 
 void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force) {
     TierTreeEntryList *solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
     tier_tree_entry_t *solvableTiersTail = get_tail(solvableTiersHead);
     tier_tree_entry_t *tmp;
-    tier_solver_stat_t globalStat;
-    memset(&globalStat, 0, sizeof globalStat);
+    int solvedTiers = 0, skippedTiers = 0, failedTiers = 0;
 
     while (solvableTiersHead) {
-        tier_solver_stat_t stat = solve_tier(solvableTiersHead->tier, nthread, mem, force);
-        if (stat.numLegalPos) {
-            /* Solve succeeded. Update tier tree. */
-            TierList *parentTiers = tier_get_parent_tier_list(solvableTiersHead->tier);
-            for (TierList *walker = parentTiers; walker; walker = walker->next) {
-                tmp = tier_tree_find(walker->tier);
-                if (tmp && --tmp->numUnsolvedChildren == 0) {
-                    tmp = tier_tree_remove(walker->tier);
-                    solvableTiersTail->next = tmp;
-                    tmp->next = NULL;
-                    solvableTiersTail = tmp;
-                }
+        /* Only solve canonical tiers. */
+        if (tier_is_canonical_tier(solvableTiersHead->tier)) {
+            tier_solver_stat_t stat = solve_tier(solvableTiersHead->tier, nthread, mem, force);
+            if (stat.numLegalPos) {
+                /* Solve succeeded. Update tier tree. */
+                update_tier_tree(solvableTiersHead->tier, &solvableTiersTail);
+                update_global_stat(stat);
+                printf("Tier %s:\n", solvableTiersHead->tier);
+                print_stat(stat);
+                printf("\n");
+                ++solvedTiers;
+            } else {
+                printf("Failed to solve tier %s: not enough memory\n", solvableTiersHead->tier);
+                ++failedTiers;
             }
-            tier_list_destroy(parentTiers);
-            printf("Tier %s:\n", solvableTiersHead->tier);
-            print_stat(stat);
-            printf("\n");
-            update_global_stat(&globalStat, stat);
-        } else {
-            printf("Failed to solve tier %s: not enough memory\n", solvableTiersHead->tier);
-        }
+        } else ++skippedTiers;
         tmp = solvableTiersHead;
         solvableTiersHead = solvableTiersHead->next;
         free(tmp);
     }
-    printf("solve_local: solver done.\n");
-    printf("All tiers with less than or equal to %d pieces solved:\n", 2 + nPiecesMax);
+    printf("solve_local: finished solving all tiers with less than or equal to %d pieces:\n"
+        "Number of canonical tiers solved: %d\n"
+        "Number of non-canonical tiers skipped: %d\n"
+        "Number of tiers failed due to OOM: %d\n"
+        "Total tiers scanned: %d\n",
+        2 + nPiecesMax, solvedTiers, skippedTiers, failedTiers, solvedTiers + skippedTiers + failedTiers);
     print_stat(globalStat);
     printf("\n");
 }

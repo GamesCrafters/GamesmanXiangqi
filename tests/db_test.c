@@ -25,7 +25,7 @@ void db_test_print_optimal_play(const char *tier, uint64_t hash) {
         return;
     }
     while (val > 1 && val < UINT16_MAX) {
-        unhash(&board, currTier, currHash);
+        game_unhash(&board, currTier, currHash);
         printf("position %"PRIu64" in tier [%s] has value %d:\n", currHash, currTier, val);
         print_board(&board);
         clear_board(&board);
@@ -58,7 +58,7 @@ void db_test_print_optimal_play(const char *tier, uint64_t hash) {
         free(children.array); children.array = NULL;
     }
 
-    unhash(&board, currTier, currHash);
+    game_unhash(&board, currTier, currHash);
     printf("position %"PRIu64" in tier [%s] has value %d:\n", currHash, currTier, val);
     print_board(&board);
     clear_board(&board);
@@ -106,7 +106,7 @@ void db_test_query_forever(void) {
         getLine("enter hash> ", buff, sizeof(buff));
         if (!strlen(buff)) return;
         hash = (uint64_t)atoll(buff);
-        unhash(&board, tier, hash);
+        game_unhash(&board, tier, hash);
         print_board(&board);
         clear_board(&board);
         printf("[rmt(%"PRIu64") in tier %s: %d]\n", hash, tier, db_get_value(tier, hash));

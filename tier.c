@@ -81,6 +81,39 @@ bool is_legal_tier(const char *tier) {
     return false;
 }
 
+struct TierListElem *tier_get_canonical_tier(const char *tier) {
+    int i, j, begin, end;
+    struct TierListElem *e = calloc(1, sizeof(struct TierListElem));
+    if (!e) return NULL;
+    
+    /* Swap piece colors. */
+    for (i = 0; i < 12; ++i) e->tier[i] = tier[i ^ 1];
+
+    /* Swap pawns. */
+    get_pawn_begin_end(tier, BLACK_P_IDX, &begin, &end);
+    e->tier[i++] = '_';
+    for (j = begin; j < end; ++j) {
+        e->tier[i++] = tier[j];
+    }
+    get_pawn_begin_end(tier, RED_P_IDX, &begin, &end);
+    e->tier[i++] = '_';
+    for (j = begin; j < end; ++j) {
+        e->tier[i++] = tier[j];
+    }
+    /* If new tier is not the canonical one, return TIER instead of the new tier. */
+    if (strncmp(tier, e->tier, TIER_STR_LENGTH_MAX) > 0) {
+        memcpy(e->tier, tier, TIER_STR_LENGTH_MAX);
+    }
+    return e;
+}
+
+bool tier_is_canonical_tier(const char *tier) {
+    struct TierListElem *e = tier_get_canonical_tier(tier);
+    bool equal = !(strncmp(e->tier, tier, TIER_STR_LENGTH_MAX));
+    free(e);
+    return equal;
+}
+
 static TierList *tier_list_insert_head(TierList *list, const char *tier, tier_change_t change) {
     TierList *newHead = (TierList*)safe_malloc(sizeof(struct TierListElem));
     newHead->next = list;
@@ -897,22 +930,3 @@ static TierList *add_pawn_pbwd_insert(TierList *list, char *tier, int8_t addIdx,
 }
 
 /*************************** END Helper Functions ****************************/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

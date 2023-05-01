@@ -36,8 +36,8 @@ typedef struct Piece {
 
 typedef struct Board {
     int8_t layout[90];
-    piece_t redPieces[17];
-    piece_t blackPieces[17];
+    piece_t redPieces[16];
+    piece_t blackPieces[16];
     bool blackTurn;
     bool valid;
 } board_t;
@@ -64,8 +64,10 @@ pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parent
 
 bool game_is_black_turn(uint64_t hash);
 
-uint64_t hash(const char *tier, const board_t *board);
-bool unhash(board_t *board, const char *tier, uint64_t hash);
+uint64_t game_hash(const char *tier, const board_t *board);
+bool game_unhash(board_t *board, const char *tier, uint64_t hash);
+uint64_t game_get_noncanonical_hash(const char *canonicalTier, uint64_t canonicalHash,
+                                    const char *noncanonicalTier, board_t *board);
 
 void game_init_board(board_t *board);
 void clear_board(board_t *board);

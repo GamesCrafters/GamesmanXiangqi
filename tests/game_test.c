@@ -14,9 +14,9 @@ static void test_hash_def(const char *tier) {
     board.valid = true;
 
     for (i = 0; i < tierSize; ++i) {
-        unhash(&board, tier, i);
+        game_unhash(&board, tier, i);
         if (board.valid) {
-            j = hash(tier, &board);
+            j = game_hash(tier, &board);
             if (j != i) {
                 printf("game_test.c::test_hash_def: hash(unhash(%"PRIu64")) in tier %s"
                        " evaluates to %"PRIu64", which is not equal to the"
