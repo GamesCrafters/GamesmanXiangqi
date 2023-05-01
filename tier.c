@@ -531,12 +531,12 @@ void tier_array_destroy(struct TierArray *array) {
 /**
  * @brief Returns the number of child tiers of TIER.
  */
-uint8_t tier_num_child_tiers(const char *tier) {
+uint8_t tier_num_child_tiers(const char *tier, bool canonicalOnly) {
     TierList *list = tier_get_child_tier_list(tier);
     uint8_t n = 0;
     TierList *walker = list;
     while (walker) {
-        ++n;
+        n += (!canonicalOnly) || tier_is_canonical_tier(walker->tier);
         walker = walker->next;
     }
     tier_list_destroy(list);

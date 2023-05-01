@@ -31,7 +31,7 @@ static pthread_mutex_t solvableLock;
 /********************* Helper Function Declarations *********************/
 static void next_rem(char *tier);
 static uint64_t strhash(const char *str);
-static void tier_tree_add_multithreaded(const char *tier, uint8_t nChildren);
+static void tier_tree_add_multithread(const char *tier, uint8_t nChildren);
 static void solvable_list_add(const char *tier, TierTreeEntryList **solvable);
 /******************* End Helper Function Declarations *******************/
 
@@ -117,10 +117,10 @@ static void append_black_pawns_multithread(char *tier, TierTreeEntryList **solva
     }
     tier[begin + nump] = '\0';
     while (true) {
-        uint8_t numChildren = tier_num_child_tiers(tier);
+        uint8_t numChildren = tier_num_child_tiers(tier, true);
 
         /* Add tier to tier tree if it depends on at least one child tier. */
-        if (numChildren) tier_tree_add_multithreaded(tier, numChildren);
+        if (numChildren) tier_tree_add_multithread(tier, numChildren);
         /* Tier is primitive and can be solved immediately. */
         else solvable_list_add(tier, solvable);
 
@@ -324,7 +324,7 @@ static uint64_t strhash(const char *str) {
  * does not check for existing tiers. Therefore, adding an existing
  * tier again results in undefined behavior.
  */
-static void tier_tree_add_multithreaded(const char *tier, uint8_t nChildren) {
+static void tier_tree_add_multithread(const char *tier, uint8_t nChildren) {
     uint64_t slot = strhash(tier) % nbuckets;
     tier_tree_entry_t *e = safe_malloc(sizeof(tier_tree_entry_t));
     for (int i = 0; i < TIER_STR_LENGTH_MAX; ++i) {

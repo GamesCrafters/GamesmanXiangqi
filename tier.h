@@ -37,7 +37,7 @@ void tier_list_destroy(TierList *list);
 struct TierArray tier_get_child_tier_array(const char *tier);
 void tier_array_destroy(struct TierArray *array);
 
-uint8_t tier_num_child_tiers(const char *tier);
+uint8_t tier_num_child_tiers(const char *tier, bool canonicalOnly);
 uint64_t *tier_size_steps(const char *tier);
 uint64_t tier_size(const char *tier);
 uint64_t tier_required_mem(const char *tier);
