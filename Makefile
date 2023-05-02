@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -fopenmp -pthread -g
+CFLAGS = -Wall -fopenmp -pthread -g -O3
 OBJ_DIR = obj
 TEST_DIR = tests
 TEST_OBJ_DIR = $(TEST_DIR)/$(OBJ_DIR)

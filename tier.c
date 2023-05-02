@@ -310,6 +310,7 @@ TierList *tier_get_child_tier_list(const char *tier) {
        bottom-most row on the opponent's side. */
     get_pawn_begin_end(tier, RED_P_IDX, &begin, &end);
     change.captureIdx = INVALID_IDX;
+    change.captureRow = -1; // Unused.
     change.pawnIdx = RED_P_IDX;
     for (i = begin; i < end && tier[i] > '0'; ++i) {
         /* Skip current pawn if next pawn is also on the same row
@@ -820,6 +821,7 @@ static TierList *rm_insert(TierList *list, char *tier, int8_t idx) {
     tier_change_t change;
     change.captureIdx = idx;
     change.pawnIdx = INVALID_IDX;
+    change.captureRow = change.pawnRow = -1; // Unused.
 
     --tier[idx];
     list = tier_list_insert_head(list, tier, change);
@@ -832,6 +834,7 @@ static TierList *rm_pawn_insert(TierList *list, char *tier, int8_t idx, int8_t r
     change.captureIdx = idx;
     change.captureRow = row;
     change.pawnIdx = INVALID_IDX;
+    change.pawnRow = -1; // Unused.
 
     rm_pawn(tier, idx, row);
     list = tier_list_insert_head(list, tier, change);
@@ -843,6 +846,7 @@ static TierList *rm_pfwd_insert(TierList *list, char *tier, int8_t pieceIdx,
                                 int8_t pawnIdx, int8_t pawnRow) {
     tier_change_t change;
     change.captureIdx = pieceIdx;
+    change.captureRow = -1; // Unused.
     change.pawnIdx = pawnIdx;
     change.pawnRow = pawnRow - 1;
 
@@ -876,6 +880,7 @@ static TierList *add_insert(TierList *list, char *tier, int8_t idx) {
     tier_change_t change;
     change.captureIdx = idx;
     change.pawnIdx = INVALID_IDX;
+    change.captureRow = change.pawnRow = -1; // Unused.
 
     ++tier[idx];
     list = tier_list_insert_head(list, tier, change);
@@ -888,6 +893,7 @@ static TierList *add_pawn_insert(TierList *list, char *tier, int8_t idx, int8_t 
     change.captureIdx = idx;
     change.captureRow = row;
     change.pawnIdx = INVALID_IDX;
+    change.pawnRow = -1; // Unused.
 
     add_pawn(tier, idx, row);
     /* Adding a pawn may result in an illegal tier. */
@@ -900,6 +906,7 @@ static TierList *add_pbwd_insert(TierList *list, char *tier, int8_t pieceIdx,
                                  int8_t pawnIdx, int8_t pawnRow) {
     tier_change_t change;
     change.captureIdx = pieceIdx;
+    change.captureRow = -1; // Unused.
     change.pawnIdx = pawnIdx;
     change.pawnRow = pawnRow + 1;
 

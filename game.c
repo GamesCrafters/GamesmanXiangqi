@@ -109,14 +109,13 @@ static void board_to_sa_position(sa_position_t *pos, board_t *board);
  */
 uint8_t game_num_child_pos(const char *tier, uint64_t hash, board_t *board) {
     uint8_t count = 0, nmoves;
-    piece_t *pieces;
     if (!game_unhash(board, tier, hash)) return ILLEGAL_NUM_CHILD_POS_OOM;
     if (!board->valid || flying_general_possible(board)) {
         clear_board(board);
         return ILLEGAL_NUM_CHILD_POS;
     }
-    pieces = board->blackTurn ? board->blackPieces : board->redPieces;
-    for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+    for (int8_t i = board->blackTurn*BOARD_PIECES_OFFSET;
+            board->pieces[i].token != BOARD_EMPTY_CELL; ++i) {
         nmoves = num_moves(board, i, false);
         if (nmoves == ILLEGAL_NUM_MOVES) {
             clear_board(board);
@@ -141,8 +140,8 @@ ext_pos_array_t game_get_children(const char *tier, uint64_t hash) {
     }
 
     children.array = (sa_position_t*)safe_malloc(NUM_MOVES_MAX * sizeof(sa_position_t));
-    piece_t *pieces = board.blackTurn ? board.blackPieces : board.redPieces;
-    for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+    for (int8_t i = board.blackTurn*BOARD_PIECES_OFFSET;
+            board.pieces[i].token != BOARD_EMPTY_CELL; ++i) {
         if (!add_children(&children, &board, i)) {
             free(children.array); children.array = NULL;
             children.size = ILLEGAL_POSITION_ARRAY_SIZE;
@@ -194,7 +193,6 @@ pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parent
     bool revp = revRedP || revBlackP;
     bool revOK;
     int8_t row, col, token, destRow;
-    piece_t *pieces = board->blackTurn ? board->redPieces : board->blackPieces;
     parents.array = (uint64_t*)malloc(NUM_MOVES_MAX * sizeof(uint64_t));
     if (!parents.array) {
         parents.size = ILLEGAL_POSITION_ARRAY_SIZE_OOM;
@@ -205,10 +203,11 @@ pos_array_t game_get_parents(const char *tier, uint64_t hash, const char *parent
     if (change.captureIdx == BLACK_P_IDX) change.captureRow = 9 - change.captureRow;
     if (change.pawnIdx == BLACK_P_IDX) change.pawnRow = 9 - change.pawnRow;
 
-    for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
-        token = pieces[i].token;
-        row = pieces[i].row;
-        col = pieces[i].col;
+    for (int8_t i = (!board->blackTurn)*BOARD_PIECES_OFFSET;
+            board->pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+        token = board->pieces[i].token;
+        row = board->pieces[i].row;
+        col = board->pieces[i].col;
         destRow = row - 1 + ((token == BOARD_RED_PAWN) << 1); // row+1 if red, row-1 if black.
         revOK = !revp || (row == change.captureRow);
         if (!pbwd && is_valid_slot(change.captureIdx, row, col) && revOK) {
@@ -294,16 +293,16 @@ uint64_t game_get_noncanonical_hash(const char *canonicalTier, uint64_t canonica
     game_unhash(board, canonicalTier, canonicalHash);
 
     /* Take all pieces off the board, swap the color, and rotate by 180 degrees. */
-    take_pieces_off_and_rotate(board->redPieces, board->layout);
-    take_pieces_off_and_rotate(board->blackPieces, board->layout);
+    take_pieces_off_and_rotate(board->pieces, board->layout);
+    take_pieces_off_and_rotate(board->pieces + BOARD_PIECES_OFFSET, board->layout);
     piece_t tmp[16];
-    memcpy(tmp, board->redPieces, 16*sizeof(piece_t));
-    memcpy(board->redPieces, board->blackPieces, 16*sizeof(piece_t));
-    memcpy(board->blackPieces, tmp, 16*sizeof(piece_t));
+    memcpy(tmp, board->pieces, 16*sizeof(piece_t));
+    memcpy(board->pieces, board->pieces + BOARD_PIECES_OFFSET, 16*sizeof(piece_t));
+    memcpy(board->pieces + BOARD_PIECES_OFFSET, tmp, 16*sizeof(piece_t));
 
     /* Place the new set of pieces on the board. */
-    place_pieces(board->redPieces, board->layout);
-    place_pieces(board->blackPieces, board->layout);
+    place_pieces(board->pieces, board->layout);
+    place_pieces(board->pieces + BOARD_PIECES_OFFSET, board->layout);
     board->blackTurn = !board->blackTurn;
 
     uint64_t res = game_hash(noncanonicalTier, board);
@@ -313,9 +312,8 @@ uint64_t game_get_noncanonical_hash(const char *canonicalTier, uint64_t canonica
 
 void game_init_board(board_t *board) {
     memset(board->layout, BOARD_EMPTY_CELL, BOARD_SIZE);
-    for (uint8_t i = 0; i < 17; ++i) {
-        board->blackPieces[i].token = INVALID_IDX;
-        board->redPieces[i].token = INVALID_IDX;
+    for (uint8_t i = 0; i < 2*MAX_PIECES_EACH_SIDE + 2; ++i) {
+        board->pieces[i].token = BOARD_EMPTY_CELL;
     }
 }
 
@@ -327,8 +325,8 @@ static void clear_board_helper(piece_t *pieces, int8_t *layout) {
 }
 
 void clear_board(board_t *board) {
-    clear_board_helper(board->redPieces, board->layout);
-    clear_board_helper(board->blackPieces, board->layout);
+    clear_board_helper(board->pieces, board->layout);
+    clear_board_helper(board->pieces + BOARD_PIECES_OFFSET, board->layout);
 }
 
 /************************** End Game Utilities **************************/
@@ -342,8 +340,8 @@ void clear_board(board_t *board) {
 static bool is_legal_pos(board_t *board) {
     if (flying_general_possible(board)) return false;
     uint8_t nmoves;
-    const piece_t *pieces = board->blackTurn ? board->blackPieces : board->redPieces;
-    for (int8_t i = 0; pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+    for (int8_t i = board->blackTurn*BOARD_PIECES_OFFSET;
+            board->pieces[i].token != BOARD_EMPTY_CELL; ++i) {
         nmoves = num_moves(board, i, true);
         if (nmoves == ILLEGAL_NUM_MOVES) return false;
     }
@@ -463,7 +461,7 @@ static bool steps_to_board(board_t *board, const char *tier, uint64_t *steps) {
 
     /* STEP 0 & 1: KINGS AND ADVISORS. */
     for (step = 0; step < 2; ++step) {
-        piece_t *pieces = (step & 1) ? board->blackPieces : board->redPieces;
+        piece_t *pieces = board->pieces + step * BOARD_PIECES_OFFSET;
         set_slots(slots, NULL, step, 0);
         piecesToPlace[1] = BOARD_RED_KING + step;
         piecesToPlace[2] = BOARD_RED_ADVISOR + step;
@@ -602,9 +600,8 @@ static bool steps_to_board(board_t *board, const char *tier, uint64_t *steps) {
     board->blackTurn = steps[15];
 
     /* NULL-terminate the pieces arrays. */
-    board->redPieces[piecesSizes[0]] = board->blackPieces[piecesSizes[1]] =
-            (piece_t){BOARD_EMPTY_CELL, 0, 0};
-
+    board->pieces[piecesSizes[0]] = (piece_t){BOARD_EMPTY_CELL, 0, 0};
+    board->pieces[BOARD_PIECES_OFFSET + piecesSizes[1]] = (piece_t){BOARD_EMPTY_CELL, 0, 0};
     return true;
 }
 
@@ -617,16 +614,14 @@ static uint64_t *board_to_steps(const char *tier, const board_t *board) {
     uint8_t slots[BOARD_SIZE];
     uint8_t rems[7];
     uint8_t pawnsPerRow[2 * BOARD_ROWS];
-    const piece_t *pieces;
 
     tier_get_pawns_per_row(tier, pawnsPerRow);
 
     /* STEPS 0 & 1: KINGS AND ADVISORS. */
     for (step = 0; step < 2; ++step) {
-        pieces = step ? board->blackPieces : board->redPieces;
         set_slots(slots, NULL, step, 0);
-        i = pieces[0].row - 7*(1 - step);
-        j = pieces[0].col - 3;
+        i = board->pieces[step * BOARD_PIECES_OFFSET].row - 7*(1 - step);
+        j = board->pieces[step * BOARD_PIECES_OFFSET].col - 3;
 
         switch (tier[RED_A_IDX + step]) {
         case '0':
@@ -719,9 +714,8 @@ static uint64_t *board_to_steps(const char *tier, const board_t *board) {
 }
 
 static bool is_valid_move(board_t *board, int8_t idx, int8_t i, int8_t j) {
-    piece_t *pieces = board->blackTurn ? board->blackPieces : board->redPieces;
-    int8_t row = pieces[idx].row;
-    int8_t col = pieces[idx].col;
+    int8_t row = board->pieces[idx].row;
+    int8_t col = board->pieces[idx].col;
     const int8_t piece = layout_at(board->layout, row, col);
     scope_t scope = get_scope(piece);
     bool res = true;
@@ -757,9 +751,8 @@ static bool is_valid_move(board_t *board, int8_t idx, int8_t i, int8_t j) {
  */
 static uint8_t num_moves(board_t *board, int8_t idx, bool testOnly) {
     uint8_t nmoves = 0;
-    piece_t *pieces = board->blackTurn ? board->blackPieces : board->redPieces;
-    int8_t row = pieces[idx].row;
-    int8_t col = pieces[idx].col;
+    int8_t row = board->pieces[idx].row;
+    int8_t col = board->pieces[idx].col;
     int8_t i, j, encounter;
     const int8_t piece = layout_at(board->layout, row, col);
 
@@ -883,9 +876,8 @@ static uint8_t num_moves(board_t *board, int8_t idx, bool testOnly) {
 }
 
 static bool add_children(ext_pos_array_t *children, board_t *board, int8_t idx) {
-    piece_t *pieces = board->blackTurn ? board->blackPieces : board->redPieces;
-    int8_t row = pieces[idx].row;
-    int8_t col = pieces[idx].col;
+    int8_t row = board->pieces[idx].row;
+    int8_t col = board->pieces[idx].col;
     int8_t i, j, encounter;
     const int8_t piece = layout_at(board->layout, row, col);
 
@@ -1067,13 +1059,8 @@ static void move_piece(board_t *board, int8_t destRow, int8_t destCol,
     int8_t capturing = layout_at(board->layout, destRow, destCol);
     piece_t *movingPieces, *capturingPieces;
 
-    if (is_red(moving)) {
-        movingPieces = board->redPieces;
-        capturingPieces = board->blackPieces;
-    } else {
-        movingPieces = board->blackPieces;
-        capturingPieces = board->redPieces;
-    }
+    movingPieces = board->pieces + (!is_red(moving)) * BOARD_PIECES_OFFSET;
+    capturingPieces = board->pieces + is_red(moving) * BOARD_PIECES_OFFSET;
 
     /* Move current piece. */
     int8_t i = 0;
@@ -1343,9 +1330,9 @@ static bool is_valid_slot(int8_t pieceIdx, int8_t row, int8_t col) {
 }
 
 static bool flying_general_possible(const board_t *board) {
-    if (board->redPieces[0].col != board->blackPieces[0].col) return false;
-    for (int8_t i = board->blackPieces[0].row + 1; i < board->redPieces[0].row; ++i) {
-        if (layout_at(board->layout, i, board->redPieces[0].col) != BOARD_EMPTY_CELL) {
+    if (board->pieces[0].col != board->pieces[BOARD_PIECES_OFFSET].col) return false;
+    for (int8_t i = board->pieces[BOARD_PIECES_OFFSET].row + 1; i < board->pieces[0].row; ++i) {
+        if (layout_at(board->layout, i, board->pieces[0].col) != BOARD_EMPTY_CELL) {
             return false;
         }
     }
@@ -1389,7 +1376,6 @@ static void hash_uncruncher(uint64_t hash, board_t *board, uint8_t *piecesSizes,
                             const int8_t *tokens, uint8_t *rems, uint8_t numTokens) {
     uint64_t prevOffset = 0, currOffset;
     int i, j, pieceIdx, parity;
-    piece_t *pieces;
     for (i = numSlots - 1; i >= 0; --i) {
         currOffset = 0;
         pieceIdx = 0;
@@ -1414,9 +1400,8 @@ static void hash_uncruncher(uint64_t hash, board_t *board, uint8_t *piecesSizes,
                piece_t format: {token, row, col}. */
             board->layout[slots[i]] = tokens[pieceIdx];
             parity = tokens[pieceIdx] & 1;
-            pieces = parity ? board->blackPieces : board->redPieces;
-            pieces[piecesSizes[parity]++] = (piece_t){ tokens[pieceIdx],
-                    slots[i] / BOARD_COLS, slots[i] % BOARD_COLS };
+            board->pieces[parity * BOARD_PIECES_OFFSET + (piecesSizes[parity]++)] = 
+                (piece_t){ tokens[pieceIdx], slots[i] / BOARD_COLS, slots[i] % BOARD_COLS };
         }
         hash -= prevOffset;
     }
@@ -1427,16 +1412,16 @@ static void board_to_sa_position(sa_position_t *pos, board_t *board) {
     uint8_t redPawnRow[7] = {0}, blackPawnRow[7] = {0};
     memset(pos->tier, '0', 12);
     /* Index starts from 1 to skip over kings. */
-    for (i = 1; board->redPieces[i].token != BOARD_EMPTY_CELL; ++i) {
-        ++pos->tier[board->redPieces[i].token];
-        if (board->redPieces[i].token == BOARD_RED_PAWN) {
-            ++redPawnRow[board->redPieces[i].row];
+    for (i = 1; board->pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+        ++pos->tier[board->pieces[i].token];
+        if (board->pieces[i].token == BOARD_RED_PAWN) {
+            ++redPawnRow[board->pieces[i].row];
         }
     }
-    for (i = 1; board->blackPieces[i].token != BOARD_EMPTY_CELL; ++i) {
-        ++pos->tier[board->blackPieces[i].token];
-        if (board->blackPieces[i].token == BOARD_BLACK_PAWN) {
-            ++blackPawnRow[9 - board->blackPieces[i].row];
+    for (i = BOARD_PIECES_OFFSET + 1; board->pieces[i].token != BOARD_EMPTY_CELL; ++i) {
+        ++pos->tier[board->pieces[i].token];
+        if (board->pieces[i].token == BOARD_BLACK_PAWN) {
+            ++blackPawnRow[9 - board->pieces[i].row];
         }
     }
     k = 12;

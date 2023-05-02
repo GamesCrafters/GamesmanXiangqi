@@ -28,16 +28,27 @@
 #define BOARD_BLACK_CANNON  BLACK_C_IDX
 #define BOARD_BLACK_ROOK    BLACK_R_IDX
 
+#define MAX_PIECES_EACH_SIDE 16
+#define BOARD_PIECES_OFFSET (MAX_PIECES_EACH_SIDE + 1)
+
 typedef struct Piece {
     int8_t token;
     int8_t row;
     int8_t col;
 } piece_t;
 
+// typedef struct Board {
+//     int8_t layout[90];
+//     piece_t redPieces[17];
+//     piece_t blackPieces[17];
+//     bool blackTurn;
+//     bool valid;
+// } board_t;
+
 typedef struct Board {
     int8_t layout[90];
-    piece_t redPieces[16];
-    piece_t blackPieces[16];
+    /* 16 pieces maximum for each color, 1 additional terminator for each. */
+    piece_t pieces[MAX_PIECES_EACH_SIDE * 2 + 2]; 
     bool blackTurn;
     bool valid;
 } board_t;
