@@ -117,7 +117,7 @@ static void append_black_pawns_multithread(char *tier, TierTreeEntryList **solva
     }
     tier[begin + nump] = '\0';
     while (true) {
-        uint8_t numChildren = tier_num_child_tiers(tier, true);
+        uint8_t numChildren = tier_num_canonical_child_tiers(tier);
 
         /* Add tier to tier tree if it depends on at least one child tier. */
         if (numChildren) tier_tree_add_multithread(tier, numChildren);
@@ -180,9 +180,7 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
     char **tiers = (char**)safe_calloc(N_REMS, sizeof(char*));
     for (uint64_t i = 0; i < N_REMS; ++i) {
         tiers[i] = (char*)safe_malloc(TIER_STR_LENGTH_MAX);
-        for (int j = 0; j < TIER_STR_LENGTH_MAX; ++j) {
-            tiers[i][j] = tier[j];
-        }
+        memcpy(tiers[i], tier, TIER_STR_LENGTH_MAX);
         next_rem(tier);
     }
 
@@ -327,9 +325,7 @@ static uint64_t strhash(const char *str) {
 static void tier_tree_add_multithread(const char *tier, uint8_t nChildren) {
     uint64_t slot = strhash(tier) % nbuckets;
     tier_tree_entry_t *e = safe_malloc(sizeof(tier_tree_entry_t));
-    for (int i = 0; i < TIER_STR_LENGTH_MAX; ++i) {
-        e->tier[i] = tier[i];
-    }
+    memcpy(e->tier, tier, TIER_STR_LENGTH_MAX);
     e->numUnsolvedChildren = nChildren;
     pthread_mutex_lock(&tree_lock);
     e->next = tree[slot];
@@ -340,9 +336,7 @@ static void tier_tree_add_multithread(const char *tier, uint8_t nChildren) {
 
 static void solvable_list_add(const char *tier, TierTreeEntryList **solvable) {
     tier_tree_entry_t *e = safe_malloc(sizeof(tier_tree_entry_t));
-    for (int i = 0; i < TIER_STR_LENGTH_MAX; ++i) {
-        e->tier[i] = tier[i];
-    }
+    memcpy(e->tier, tier, TIER_STR_LENGTH_MAX);
     e->numUnsolvedChildren = 0;
     pthread_mutex_lock(&solvableLock);
     e->next = *solvable;

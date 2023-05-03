@@ -18,10 +18,16 @@ static char *get_stat_filename(const char *tier);
 
 uint16_t db_get_value(const char *tier, uint64_t hash) {
     FILE *f = db_fopen_tier(tier, "rb");
-    if (!f) exit(1);
+    if (!f) {
+        printf("db_get_value: failed to open tier %s\n", tier);
+        exit(1);
+    }
     uint16_t res;
     fseek(f, hash*sizeof(uint16_t), SEEK_SET);
-    fread(&res, sizeof(res), 1, f);
+    if (fread(&res, sizeof(res), 1, f) != 1) {
+        printf("db_get_value: error reading position %"PRIu64" from tier %s.\n", hash, tier);
+        exit(1);
+    }
     fclose(f);
     return res;
 }
@@ -100,7 +106,10 @@ tier_solver_stat_t db_load_stat(const char *tier) {
     FILE *fp = fopen(statFilename, "rb");
     free(statFilename);
     assert(fp);
-    fread(&st, sizeof(st), 1, fp);
+    if (fread(&st, sizeof(st), 1, fp) != 1) {
+        printf("db_load_stat: failed to read statistics file for tier %s\n", tier);
+        exit(1);
+    }
     fclose(fp);
     return st;
 }

@@ -43,13 +43,6 @@ static void update_global_stat(tier_solver_stat_t stat) {
     }
 }
 
-static bool tier_list_contains(const TierList *list, const char *tier) {
-    for (const struct TierListElem *walker = list; walker; walker = walker->next) {
-        if (!strncmp(walker->tier, tier, TIER_STR_LENGTH_MAX)) return true;
-    }
-    return false;
-}
-
 static void update_tier_tree(const char *solvedTier, tier_tree_entry_t **solvableTiersTail) {
     tier_tree_entry_t *tmp;
     TierList *parentTiers = tier_get_parent_tier_list(solvedTier);

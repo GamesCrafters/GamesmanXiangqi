@@ -91,7 +91,10 @@ static uint16_t *load_values_from_disk(const char *tier, uint64_t size) {
         printf("load_values_from_disk: failed to open tier %s\n", tier);
         exit(1);
     }
-    fread(values, sizeof(uint16_t), size, loadfile);
+    if (fread(values, sizeof(uint16_t), size, loadfile) != size) {
+        printf("load_values_from_disk: failed to load all values from tier %s\n", tier);
+        exit(1);
+    }
     fclose(loadfile);
     return values;
 }

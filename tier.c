@@ -87,7 +87,9 @@ struct TierListElem *tier_get_canonical_tier(const char *tier) {
     if (!e) return NULL;
     
     /* Swap piece colors. */
-    for (i = 0; i < 12; ++i) e->tier[i] = tier[i ^ 1];
+    for (i = 0; i < 12; ++i) {
+        e->tier[i] = tier[i ^ 1];
+    }
 
     /* Swap pawns. */
     get_pawn_begin_end(tier, BLACK_P_IDX, &begin, &end);
@@ -171,11 +173,9 @@ TierList *tier_get_child_tier_list(const char *tier) {
     TierList *list = NULL;
     struct TierProperties p = get_tier_properties(tier);
     tier_change_t change;
-    char tierCpy[TIER_STR_LENGTH_MAX];
     int i, j, begin, end;
-    for (i = 0; i < TIER_STR_LENGTH_MAX; ++i) {
-        tierCpy[i] = tier[i];
-    }
+    char tierCpy[TIER_STR_LENGTH_MAX];
+    memcpy(tierCpy, tier, TIER_STR_LENGTH_MAX);
 
     /* 1. CHILD TIERS BY CAPTURING. */
 
@@ -480,6 +480,13 @@ TierList *tier_get_parent_tier_list(const char *tier) {
     return list;
 }
 
+bool tier_list_contains(const TierList *list, const char *tier) {
+    for (const struct TierListElem *walker = list; walker; walker = walker->next) {
+        if (!strncmp(walker->tier, tier, TIER_STR_LENGTH_MAX)) return true;
+    }
+    return false;
+}
+
 void tier_list_destroy(TierList *list) {
     struct TierListElem *next;
     while (list) {
@@ -532,14 +539,41 @@ void tier_array_destroy(struct TierArray *array) {
 /**
  * @brief Returns the number of child tiers of TIER.
  */
-uint8_t tier_num_child_tiers(const char *tier, bool canonicalOnly) {
+uint8_t tier_num_child_tiers(const char *tier) {
     TierList *list = tier_get_child_tier_list(tier);
     uint8_t n = 0;
     TierList *walker = list;
     while (walker) {
-        n += (!canonicalOnly) || tier_is_canonical_tier(walker->tier);
+        ++n;
         walker = walker->next;
     }
+    tier_list_destroy(list);
+    return n;
+}
+
+/**
+ * @brief Returns the number of unique canonical child tiers of TIER.
+ */
+uint8_t tier_num_canonical_child_tiers(const char *tier) {
+    TierList *list = tier_get_child_tier_list(tier);
+    uint8_t n = 0;
+    TierList *walker = list;
+    TierList *canonicalChildren = NULL;
+    while (walker) {
+        struct TierListElem *canonical = tier_get_canonical_tier(walker->tier);
+        if (tier_list_contains(canonicalChildren, canonical->tier)) {
+            /* It is possible that TIER has two children that are symmetrical
+               to each other. In this case, we should only increment the child
+               counter once. */
+            free(canonical);
+        } else {
+            canonical->next = canonicalChildren;
+            canonicalChildren = canonical;
+            ++n;
+        }
+        walker = walker->next;
+    }
+    tier_list_destroy(canonicalChildren);
     tier_list_destroy(list);
     return n;
 }
