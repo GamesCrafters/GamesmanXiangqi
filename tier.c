@@ -34,8 +34,6 @@
  * row of red's side.
  */
 
-extern uint64_t choose[CHOOSE_ROWS][CHOOSE_COLS];
-
 /* Max number of remaining pieces of each type. */
 static const char *REM_MAX = "222255222222";
 

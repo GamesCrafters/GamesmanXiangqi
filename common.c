@@ -1,5 +1,4 @@
 #include "common.h"
-#include <stdint.h>
 
 uint64_t choose[CHOOSE_ROWS][CHOOSE_COLS];
 

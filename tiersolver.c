@@ -287,10 +287,10 @@ static bool solve_tier_step_3_scan_tier(void) {
     return success;
 }
 
-static uint8_t get_child_idx(uint64_t **divider, uint16_t rmt, uint64_t i) {
-    uint8_t childIdx;
-    for (childIdx = 0; childIdx < childTiers.size; ++childIdx) {
+static uint8_t update_child_idx(uint8_t childIdx, uint64_t **divider, uint16_t rmt, uint64_t i) {
+    while (childIdx < childTiers.size) {
         if (i < divider[rmt][childIdx]) break;
+        ++childIdx;
     }
     return childIdx;
 }
@@ -299,15 +299,16 @@ static bool solve_tier_step_4_push_frontier_up(void) {
     /* STEP 4: PUSH FRONTIER UP. */
     const tier_change_t noChange = {INVALID_IDX, -1, INVALID_IDX, -1};
     bool success = true;
+    uint8_t childIdx = 0;
 
     accumulate_dividers(childTiers.size);
     /* Remotenesses must be processed in series. */
     for (uint16_t rmt = 0; rmt < FR_SIZE; ++rmt) {
         /* Process loseFR. */
-        #pragma omp parallel for firstprivate(board)
+        childIdx = 0;
+        #pragma omp parallel for firstprivate(board, childIdx)
         for (uint64_t i = 0; i < loseFR.sizes[rmt]; ++i) {
-            // TODO: remove this function from the loop.
-            uint8_t childIdx = get_child_idx(loseDivider, rmt, i);
+            childIdx = update_child_idx(childIdx, loseDivider, rmt, i);
             if (childIdx < childTiers.size) {
                 success &= process_lose_pos(rmt, childTiers.tiers[childIdx], loseFR.buckets[rmt][i],
                                             childTiers.changes[childIdx], &board);
@@ -318,9 +319,10 @@ static bool solve_tier_step_4_push_frontier_up(void) {
         frontier_free(&loseFR, rmt);
 
         /* Process winFR. */
-        #pragma omp parallel for firstprivate(board)
+        childIdx = 0;
+        #pragma omp parallel for firstprivate(board, childIdx)
         for (uint64_t i = 0; i < winFR.sizes[rmt]; ++i) {
-            uint8_t childIdx = get_child_idx(winDivider, rmt, i);
+            childIdx = update_child_idx(childIdx, winDivider, rmt, i);
             if (childIdx < childTiers.size) {
                 success &= process_win_pos(rmt, childTiers.tiers[childIdx], winFR.buckets[rmt][i],
                                            childTiers.changes[childIdx], &board);

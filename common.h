@@ -1,5 +1,6 @@
 #ifndef COMMON_H
 #define COMMON_H
+#include <stdint.h>
 
 enum rem_idx {
     RED_K_IDX = -2,
@@ -27,5 +28,7 @@ enum rem_idx {
 #define DRAW_VALUE 32768
 
 void make_triangle(void);
+
+extern uint64_t choose[CHOOSE_ROWS][CHOOSE_COLS];
 
 #endif // COMMON_H

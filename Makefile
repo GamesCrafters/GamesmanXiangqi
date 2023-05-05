@@ -5,12 +5,12 @@ TEST_DIR = tests
 TEST_OBJ_DIR = $(TEST_DIR)/$(OBJ_DIR)
 BIN_DIR = bin
 
-DEPS = common.h db.h frontier.h game.h md5.h misc.h solver.h tier.h tiersolver.h tiertree.h
+DEPS = common.h db.h frontier.h game.h gameconstants.h md5.h misc.h solver.h tier.h tiersolver.h tiertree.h
 
 _TEST_DEPS = db_test.h game_test.h tests.h tier_test.h tiersolver_test.h
 TEST_DEPS = $(patsubst %, $(TEST_DIR)/%, $(_TEST_DEPS))
 
-_CORE_OBJ = common.o db.o frontier.o game.o md5.o misc.o solver.o tier.o tiersolver.o tiertree.o
+_CORE_OBJ = common.o db.o frontier.o game.o gameconstants.o md5.o misc.o solver.o tier.o tiersolver.o tiertree.o
 CORE_OBJ = $(patsubst %, $(OBJ_DIR)/%, $(_CORE_OBJ))
 
 # Main solver.

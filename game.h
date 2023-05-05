@@ -9,41 +9,14 @@
 #define ILLEGAL_POSITION_ARRAY_SIZE     UINT8_MAX
 #define ILLEGAL_POSITION_ARRAY_SIZE_OOM (UINT8_MAX - 1)
 
-#define BOARD_ROWS 10
-#define BOARD_COLS 9
-#define BOARD_SIZE (BOARD_ROWS*BOARD_COLS)
-#define BOARD_EMPTY_CELL    INVALID_IDX
-#define BOARD_RED_KING      RED_K_IDX
-#define BOARD_RED_ADVISOR   RED_A_IDX
-#define BOARD_RED_BISHOP    RED_B_IDX
-#define BOARD_RED_PAWN      RED_P_IDX
-#define BOARD_RED_KNIGHT    RED_N_IDX
-#define BOARD_RED_CANNON    RED_C_IDX
-#define BOARD_RED_ROOK      RED_R_IDX
-#define BOARD_BLACK_KING    BLACK_K_IDX
-#define BOARD_BLACK_ADVISOR BLACK_A_IDX
-#define BOARD_BLACK_BISHOP  BLACK_B_IDX
-#define BOARD_BLACK_PAWN    BLACK_P_IDX
-#define BOARD_BLACK_KNIGHT  BLACK_N_IDX
-#define BOARD_BLACK_CANNON  BLACK_C_IDX
-#define BOARD_BLACK_ROOK    BLACK_R_IDX
-
-#define MAX_PIECES_EACH_SIDE 16
-#define BOARD_PIECES_OFFSET (MAX_PIECES_EACH_SIDE + 1)
-
 typedef struct Piece {
     int8_t token;
     int8_t row;
     int8_t col;
 } piece_t;
 
-// typedef struct Board {
-//     int8_t layout[90];
-//     piece_t redPieces[17];
-//     piece_t blackPieces[17];
-//     bool blackTurn;
-//     bool valid;
-// } board_t;
+#define MAX_PIECES_EACH_SIDE 16
+#define BOARD_PIECES_OFFSET (MAX_PIECES_EACH_SIDE + 1)
 
 typedef struct Board {
     int8_t layout[90];

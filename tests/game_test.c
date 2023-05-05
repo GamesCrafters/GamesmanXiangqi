@@ -10,8 +10,7 @@ static void test_hash_def(const char *tier) {
     uint64_t tierSize = tier_size(tier);
     uint64_t i, j;
     board_t board;
-    memset(board.layout, BOARD_EMPTY_CELL, BOARD_ROWS * BOARD_COLS);
-    board.valid = true;
+    game_init_board(&board);
 
     for (i = 0; i < tierSize; ++i) {
         game_unhash(&board, tier, i);

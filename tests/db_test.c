@@ -94,8 +94,7 @@ static int getLine (char *prmpt, char *buff, size_t sz) {
 
 void db_test_query_forever(void) {
     board_t board;
-    memset(board.layout, BOARD_EMPTY_CELL, 90);
-    board.valid = true;
+    game_init_board(&board);
 
     char tier[25];
     char buff[25];
