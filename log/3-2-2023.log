@@ -1,0 +1,2605 @@
+tier_tree_build_tree_multithread: tier tree built.
+total number of buckets: 331
+total number of elements: 310
+solvable tiers: [000200000000__] [001100000000__] [010100000000__] [100100000000__] [000100000000__] [002000000000__] [011000000000__] [101000000000__] [001000000000__] [020000000000__] [110000000000__] [010000000000__] [200000000000__] [100000000000__] [000000000000__] 
+Tier 000200000000__:
+total legal positions: 2268
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 2268
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 001100000000__:
+total legal positions: 5276
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 5276
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 010100000000__:
+total legal positions: 3558
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 3558
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 100100000000__:
+total legal positions: 3568
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 3568
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000100000000__:
+total legal positions: 756
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 756
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 002000000000__:
+total legal positions: 2268
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 2268
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 011000000000__:
+total legal positions: 3568
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 3568
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 101000000000__:
+total legal positions: 3558
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 3558
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 001000000000__:
+total legal positions: 756
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 756
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 020000000000__:
+total legal positions: 948
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 948
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 110000000000__:
+total legal positions: 2378
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 2378
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 010000000000__:
+total legal positions: 510
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 510
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 200000000000__:
+total legal positions: 948
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 948
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 100000000000__:
+total legal positions: 510
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 510
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000000000000__:
+total legal positions: 108
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 108
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000100000001__:
+total legal positions: 60498
+number of winning positions: 26532
+number of losing positions: 33186
+number of drawing positions: 780
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 30143 // check
+
+Tier 000100000100__:
+total legal positions: 67893
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 67893
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0 // check
+
+Tier 000100010000__:
+total legal positions: 65664
+number of winning positions: 31698
+number of losing positions: 33186
+number of drawing positions: 780
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 52201 // check
+
+Tier 000101000000__0:
+total legal positions: 6300
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 6300
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 001000000010__:
+total legal positions: 60498
+number of winning positions: 26532
+number of losing positions: 33186
+number of drawing positions: 780
+longest win for red is 5 steps at position 89782 // check
+longest win for black is 0 steps at position 0
+
+Tier 001000001000__:
+total legal positions: 67893
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 67893
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0 // check
+
+Tier 001000100000__:
+total legal positions: 65664
+number of winning positions: 31698
+number of losing positions: 33186
+number of drawing positions: 780
+longest win for red is 13 steps at position 93784 // check
+longest win for black is 0 steps at position 0
+
+Tier 001010000000_0_:
+total legal positions: 6300
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 6300
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 010000000001__:
+total legal positions: 40878
+number of winning positions: 18072
+number of losing positions: 22274
+number of drawing positions: 532
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 32737 // check
+
+Tier 010000000100__:
+total legal positions: 45516
+number of winning positions: 22710
+number of losing positions: 22274
+number of drawing positions: 532
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 31643
+
+Tier 010000010000__:
+total legal positions: 44082
+number of winning positions: 21276
+number of losing positions: 22274
+number of drawing positions: 532
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 12011
+
+Tier 010001000000__0:
+total legal positions: 4250
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 4250
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 100000000010__:
+total legal positions: 40878
+number of winning positions: 18072
+number of losing positions: 22274
+number of drawing positions: 532
+longest win for red is 5 steps at position 39472 // check
+longest win for black is 0 steps at position 0
+
+Tier 100000001000__:
+total legal positions: 45516
+number of winning positions: 22710
+number of losing positions: 22274
+number of drawing positions: 532
+longest win for red is 17 steps at position 61796
+longest win for black is 0 steps at position 0
+
+Tier 100000100000__:
+total legal positions: 44082
+number of winning positions: 21276
+number of losing positions: 22274
+number of drawing positions: 532
+longest win for red is 13 steps at position 52542
+longest win for black is 0 steps at position 0
+
+Tier 100010000000_0_:
+total legal positions: 4250
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 4250
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000000000001__:
+total legal positions: 8748
+number of winning positions: 3834
+number of losing positions: 4806
+number of drawing positions: 108
+longest win for red is 0 steps at position 0
+longest win for black is 3 steps at position 9013
+
+Tier 000000000010__:
+total legal positions: 8748
+number of winning positions: 3834
+number of losing positions: 4806
+number of drawing positions: 108
+longest win for red is 3 steps at position 13550
+longest win for black is 0 steps at position 0
+
+Tier 000000000100__:
+total legal positions: 9828
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 9828
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000000001000__:
+total legal positions: 9828
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 9828
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000000010000__:
+total legal positions: 9504
+number of winning positions: 4590
+number of losing positions: 4806
+number of drawing positions: 108
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 6337
+
+Tier 000000100000__:
+total legal positions: 9504
+number of winning positions: 4590
+number of losing positions: 4806
+number of drawing positions: 108
+longest win for red is 13 steps at position 4046
+longest win for black is 0 steps at position 0
+
+Tier 000001000000__0:
+total legal positions: 900
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 900
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000010000000_0_:
+total legal positions: 900
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 900
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000101000000__1:
+total legal positions: 6234
+number of winning positions: 2898
+number of losing positions: 2992
+number of drawing positions: 344
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 1583
+
+Tier 001010000000_1_:
+total legal positions: 6234
+number of winning positions: 2898
+number of losing positions: 2992
+number of drawing positions: 344
+longest win for red is 19 steps at position 3598
+longest win for black is 0 steps at position 0
+
+Tier 010001000000__1:
+total legal positions: 4200
+number of winning positions: 1955
+number of losing positions: 2011
+number of drawing positions: 234
+longest win for red is 0 steps at position 0
+longest win for black is 21 steps at position 3041
+
+Tier 100010000000_1_:
+total legal positions: 4200
+number of winning positions: 1955
+number of losing positions: 2011
+number of drawing positions: 234
+longest win for red is 21 steps at position 898
+longest win for black is 0 steps at position 0
+
+Tier 000000000002__:
+total legal positions: 354573
+number of winning positions: 134190
+number of losing positions: 220383
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 3 steps at position 390875
+
+Tier 001000000001__:
+total legal positions: 60774
+number of winning positions: 26808
+number of losing positions: 32436
+number of drawing positions: 1530
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 95041
+
+Tier 100000000001__:
+total legal positions: 41313
+number of winning positions: 18507
+number of losing positions: 22074
+number of drawing positions: 732
+longest win for red is 0 steps at position 0
+longest win for black is 9 steps at position 24541
+
+Tier 000000000011__:
+total legal positions: 696042
+number of winning positions: 279342
+number of losing positions: 28800
+number of drawing positions: 387900
+longest win for red is 9 steps at position 1220616
+longest win for black is 9 steps at position 381117
+
+Tier 000000000020__:
+total legal positions: 354573
+number of winning positions: 134190
+number of losing positions: 220383
+number of drawing positions: 0
+longest win for red is 3 steps at position 589496
+longest win for black is 0 steps at position 0
+
+Tier 000100000010__:
+total legal positions: 60774
+number of winning positions: 26808
+number of losing positions: 32436
+number of drawing positions: 1530
+longest win for red is 11 steps at position 88912
+longest win for black is 0 steps at position 0
+
+Tier 010000000010__:
+total legal positions: 41313
+number of winning positions: 18507
+number of losing positions: 22074
+number of drawing positions: 732
+longest win for red is 9 steps at position 59010
+longest win for black is 0 steps at position 0
+
+Tier 000000000101__:
+total legal positions: 788787
+number of winning positions: 348021
+number of losing positions: 430740
+number of drawing positions: 10026
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 643441
+
+Tier 000000000110__:
+total legal positions: 786132
+number of winning positions: 348021
+number of losing positions: 423315
+number of drawing positions: 14796
+longest win for red is 15 steps at position 120492
+longest win for black is 0 steps at position 0
+
+Tier 000000000200__:
+total legal positions: 438111
+number of winning positions: 217662
+number of losing positions: 210387
+number of drawing positions: 10062
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 328691
+
+Tier 001000000100__:
+total legal positions: 67698
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 67698
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 100000000100__:
+total legal positions: 45120
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 45120
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000000001001__:
+total legal positions: 786132
+number of winning positions: 348021
+number of losing positions: 423315
+number of drawing positions: 14796
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 240345
+
+Tier 000000001010__:
+total legal positions: 788787
+number of winning positions: 348021
+number of losing positions: 430740
+number of drawing positions: 10026
+longest win for red is 5 steps at position 1132940
+longest win for black is 0 steps at position 0
+
+Tier 000000001100__:
+total legal positions: 876222
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 876222
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000000002000__:
+total legal positions: 438111
+number of winning positions: 217662
+number of losing positions: 210387
+number of drawing positions: 10062
+longest win for red is 13 steps at position 444076
+longest win for black is 0 steps at position 0
+
+Tier 000100001000__:
+total legal positions: 67698
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 67698
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 010000001000__:
+total legal positions: 45120
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 45120
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000000010001__:
+total legal positions: 766431
+number of winning positions: 325665
+number of losing positions: 440766
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 643441
+
+Tier 000000010010__:
+total legal positions: 759987
+number of winning positions: 383787
+number of losing positions: 371788
+number of drawing positions: 4412
+longest win for red is 25 steps at position 1111148 // wrong, should be 17
+longest win for black is 17 steps at position 379457 // however, this is correct
+
+Tier 000000010100__:
+total legal positions: 850077
+number of winning positions: 409311
+number of losing positions: 430740
+number of drawing positions: 10026
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 656553
+
+Tier 000000011000__:
+total legal positions: 850077
+number of winning positions: 38688
+number of losing positions: 1652
+number of drawing positions: 809737
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 379457
+
+Tier 000000020000__:
+total legal positions: 412848
+number of winning positions: 192465
+number of losing positions: 220383
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 321555
+
+Tier 001000010000__:
+total legal positions: 65766
+number of winning positions: 7668
+number of losing positions: 2062
+number of drawing positions: 56036
+longest win for red is 0 steps at position 0
+longest win for black is 31 steps at position 57165
+
+Tier 100000010000__:
+total legal positions: 44232
+number of winning positions: 21366
+number of losing positions: 21990
+number of drawing positions: 876
+longest win for red is 0 steps at position 0
+longest win for black is 37 steps at position 7151
+
+Tier 000000100001__:
+total legal positions: 759987
+number of winning positions: 383787
+number of losing positions: 371788
+number of drawing positions: 4412
+longest win for red is 17 steps at position 1199326
+longest win for black is 25 steps at position 861213
+
+Tier 000000100010__:
+total legal positions: 766431
+number of winning positions: 325665
+number of losing positions: 440766
+number of drawing positions: 0
+longest win for red is 5 steps at position 1179002
+longest win for black is 0 steps at position 0
+
+Tier 000000100100__:
+total legal positions: 850077
+number of winning positions: 38688
+number of losing positions: 1652
+number of drawing positions: 809737
+longest win for red is 17 steps at position 1199326
+longest win for black is 0 steps at position 0
+
+Tier 000000101000__:
+total legal positions: 850077
+number of winning positions: 409311
+number of losing positions: 430740
+number of drawing positions: 10026
+longest win for red is 13 steps at position 1178680
+longest win for black is 0 steps at position 0
+
+Tier 000000110000__:
+total legal positions: 823932
+number of winning positions: 81228
+number of losing positions: 6686
+number of drawing positions: 736018
+longest win for red is 23 steps at position 1006842
+longest win for black is 23 steps at position 1132253
+
+Tier 000000200000__:
+total legal positions: 412848
+number of winning positions: 192465
+number of losing positions: 220383
+number of drawing positions: 0
+longest win for red is 13 steps at position 519908
+longest win for black is 0 steps at position 0
+
+Tier 000100100000__:
+total legal positions: 65766
+number of winning positions: 7668
+number of losing positions: 2062
+number of drawing positions: 56036
+longest win for red is 31 steps at position 17298
+longest win for black is 0 steps at position 0
+
+Tier 010000100000__:
+total legal positions: 44232
+number of winning positions: 21366
+number of losing positions: 21990
+number of drawing positions: 876
+longest win for red is 37 steps at position 34972
+longest win for black is 0 steps at position 0
+
+Tier 000001000000__1:
+total legal positions: 891
+number of winning positions: 414
+number of losing positions: 429
+number of drawing positions: 48
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 665
+
+Tier 000001000001__0:
+total legal positions: 72615
+number of winning positions: 30504
+number of losing positions: 41247
+number of drawing positions: 864
+longest win for red is 0 steps at position 0
+longest win for black is 3 steps at position 81295
+
+Tier 000001000010__0:
+total legal positions: 71667
+number of winning positions: 32814
+number of losing positions: 37233
+number of drawing positions: 1620
+longest win for red is 9 steps at position 96246
+longest win for black is 1 steps at position 125085
+
+Tier 000001000100__0:
+total legal positions: 80844
+number of winning positions: 54
+number of losing positions: 6
+number of drawing positions: 80784
+longest win for red is 0 steps at position 0
+longest win for black is 1 steps at position 125865
+
+Tier 000001001000__0:
+total legal positions: 80964
+number of winning positions: 12
+number of losing positions: 12
+number of drawing positions: 80940
+longest win for red is 0 steps at position 0
+longest win for black is 1 steps at position 125085
+
+Tier 000001010000__0:
+total legal positions: 78372
+number of winning positions: 36261
+number of losing positions: 41247
+number of drawing positions: 864
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 67165
+
+Tier 000001100000__0:
+total legal positions: 78156
+number of winning positions: 3894
+number of losing positions: 126
+number of drawing positions: 74136
+longest win for red is 15 steps at position 125260
+longest win for black is 1 steps at position 125781
+
+Tier 000002000000__00:
+total legal positions: 3366
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 3366
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 001001000000__0:
+total legal positions: 6084
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 6084
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 100001000000__0:
+total legal positions: 4062
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 4062
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000010000000_1_:
+total legal positions: 891
+number of winning positions: 414
+number of losing positions: 429
+number of drawing positions: 48
+longest win for red is 17 steps at position 574
+longest win for black is 0 steps at position 0
+
+Tier 000010000001_0_:
+total legal positions: 71667
+number of winning positions: 32814
+number of losing positions: 37233
+number of drawing positions: 1620
+longest win for red is 1 steps at position 103032
+longest win for black is 9 steps at position 99501
+
+Tier 000010000010_0_:
+total legal positions: 72615
+number of winning positions: 30504
+number of losing positions: 41247
+number of drawing positions: 864
+longest win for red is 3 steps at position 120580
+longest win for black is 0 steps at position 0
+
+Tier 000010000100_0_:
+total legal positions: 80964
+number of winning positions: 12
+number of losing positions: 12
+number of drawing positions: 80940
+longest win for red is 1 steps at position 103032
+longest win for black is 0 steps at position 0
+
+Tier 000010001000_0_:
+total legal positions: 80844
+number of winning positions: 54
+number of losing positions: 6
+number of drawing positions: 80784
+longest win for red is 1 steps at position 116556
+longest win for black is 0 steps at position 0
+
+Tier 000010010000_0_:
+total legal positions: 78156
+number of winning positions: 3894
+number of losing positions: 126
+number of drawing positions: 74136
+longest win for red is 1 steps at position 116256
+longest win for black is 15 steps at position 112607
+
+Tier 000010100000_0_:
+total legal positions: 78372
+number of winning positions: 36261
+number of losing positions: 41247
+number of drawing positions: 864
+longest win for red is 13 steps at position 120580
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_0_0:
+total legal positions: 7488
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 7488
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_00_:
+total legal positions: 3366
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 3366
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000110000000_0_:
+total legal positions: 6084
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 6084
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 010010000000_0_:
+total legal positions: 4062
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 4062
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000101000000__2:
+total legal positions: 6354
+number of winning positions: 2958
+number of losing positions: 3178
+number of drawing positions: 218
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 1999
+
+Tier 001010000000_2_:
+total legal positions: 6354
+number of winning positions: 2958
+number of losing positions: 3178
+number of drawing positions: 218
+longest win for red is 11 steps at position 9322
+longest win for black is 0 steps at position 0
+
+Tier 010001000000__2:
+total legal positions: 4270
+number of winning positions: 1990
+number of losing positions: 2131
+number of drawing positions: 149
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 1369
+
+Tier 100010000000_2_:
+total legal positions: 4270
+number of winning positions: 1990
+number of losing positions: 2131
+number of drawing positions: 149
+longest win for red is 11 steps at position 6028
+longest win for black is 0 steps at position 0
+
+Tier 000001000000__2:
+total legal positions: 909
+number of winning positions: 423
+number of losing positions: 456
+number of drawing positions: 30
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 163
+
+Tier 000001000001__1:
+total legal positions: 72084
+number of winning positions: 29244
+number of losing positions: 42840
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 122537
+
+Tier 000001000010__1:
+total legal positions: 70767
+number of winning positions: 34968
+number of losing positions: 35277
+number of drawing positions: 522
+longest win for red is 11 steps at position 105790
+longest win for black is 19 steps at position 111503
+
+Tier 000001000100__1:
+total legal positions: 79953
+number of winning positions: 37113
+number of losing positions: 38421
+number of drawing positions: 4419
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 23645
+
+Tier 000001001000__1:
+total legal positions: 80037
+number of winning positions: 1458
+number of losing positions: 66
+number of drawing positions: 78513
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 111503
+
+Tier 000001010000__1:
+total legal positions: 77787
+number of winning positions: 34947
+number of losing positions: 42840
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 70313
+
+Tier 000001100000__1:
+total legal positions: 77229
+number of winning positions: 7555
+number of losing positions: 292
+number of drawing positions: 69382
+longest win for red is 15 steps at position 110484
+longest win for black is 19 steps at position 111503
+
+Tier 000002000000__10:
+total legal positions: 7416
+number of winning positions: 3294
+number of losing positions: 3708
+number of drawing positions: 414
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 6951
+
+Tier 001001000000__1:
+total legal positions: 6219
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 6219
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 100001000000__1:
+total legal positions: 4092
+number of winning positions: 234
+number of losing positions: 108
+number of drawing positions: 3750
+longest win for red is 0 steps at position 0
+longest win for black is 9 steps at position 5355
+
+Tier 000010000000_2_:
+total legal positions: 909
+number of winning positions: 423
+number of losing positions: 456
+number of drawing positions: 30
+longest win for red is 11 steps at position 358
+longest win for black is 0 steps at position 0
+
+Tier 000010000001_1_:
+total legal positions: 70767
+number of winning positions: 34968
+number of losing positions: 35277
+number of drawing positions: 522
+longest win for red is 19 steps at position 123906
+longest win for black is 11 steps at position 58653
+
+Tier 000010000010_1_:
+total legal positions: 72084
+number of winning positions: 29244
+number of losing positions: 42840
+number of drawing positions: 0
+longest win for red is 5 steps at position 125278
+longest win for black is 0 steps at position 0
+
+Tier 000010000100_1_:
+total legal positions: 80037
+number of winning positions: 1458
+number of losing positions: 66
+number of drawing positions: 78513
+longest win for red is 19 steps at position 123906
+longest win for black is 0 steps at position 0
+
+Tier 000010001000_1_:
+total legal positions: 79953
+number of winning positions: 37113
+number of losing positions: 38421
+number of drawing positions: 4419
+longest win for red is 11 steps at position 110464
+longest win for black is 0 steps at position 0
+
+Tier 000010010000_1_:
+total legal positions: 77229
+number of winning positions: 7555
+number of losing positions: 292
+number of drawing positions: 69382
+longest win for red is 19 steps at position 123906
+longest win for black is 15 steps at position 102675
+
+Tier 000010100000_1_:
+total legal positions: 77787
+number of winning positions: 34947
+number of losing positions: 42840
+number of drawing positions: 0
+longest win for red is 13 steps at position 120580
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_0_1:
+total legal positions: 7404
+number of winning positions: 220
+number of losing positions: 11
+number of drawing positions: 7173
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 11107
+
+Tier 000011000000_1_0:
+total legal positions: 7404
+number of winning positions: 220
+number of losing positions: 11
+number of drawing positions: 7173
+longest win for red is 19 steps at position 8434
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_10_:
+total legal positions: 7416
+number of winning positions: 3294
+number of losing positions: 3708
+number of drawing positions: 414
+longest win for red is 17 steps at position 9556
+longest win for black is 0 steps at position 0
+
+Tier 000110000000_1_:
+total legal positions: 6219
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 6219
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 010010000000_1_:
+total legal positions: 4092
+number of winning positions: 234
+number of losing positions: 108
+number of drawing positions: 3750
+longest win for red is 9 steps at position 674
+longest win for black is 0 steps at position 0
+
+Tier 000101000000__3:
+total legal positions: 6978
+number of winning positions: 3396
+number of losing positions: 3582
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 10063
+
+Tier 001010000000_3_:
+total legal positions: 6978
+number of winning positions: 3396
+number of losing positions: 3582
+number of drawing positions: 0
+longest win for red is 13 steps at position 9952
+longest win for black is 0 steps at position 0
+
+Tier 010001000000__3:
+total legal positions: 4680
+number of winning positions: 2280
+number of losing positions: 2400
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 6463
+
+Tier 100010000000_3_:
+total legal positions: 4680
+number of winning positions: 2280
+number of losing positions: 2400
+number of drawing positions: 0
+longest win for red is 13 steps at position 6462
+longest win for black is 0 steps at position 0
+
+Tier 000001000000__3:
+total legal positions: 999
+number of winning positions: 486
+number of losing positions: 513
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 1423
+
+Tier 000001000001__2:
+total legal positions: 73632
+number of winning positions: 30054
+number of losing positions: 43578
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 37797
+
+Tier 000001000010__2:
+total legal positions: 72243
+number of winning positions: 36207
+number of losing positions: 35958
+number of drawing positions: 78
+longest win for red is 13 steps at position 40012
+longest win for black is 19 steps at position 111327
+
+Tier 000001000100__2:
+total legal positions: 81294
+number of winning positions: 37716
+number of losing positions: 40803
+number of drawing positions: 2775
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 112749
+
+Tier 000001001000__2:
+total legal positions: 81468
+number of winning positions: 2031
+number of losing positions: 96
+number of drawing positions: 79341
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 111327
+
+Tier 000001010000__2:
+total legal positions: 79317
+number of winning positions: 35739
+number of losing positions: 43578
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 18799
+
+Tier 000001100000__2:
+total legal positions: 78669
+number of winning positions: 7920
+number of losing positions: 324
+number of drawing positions: 70425
+longest win for red is 15 steps at position 82474
+longest win for black is 19 steps at position 75039
+
+Tier 000002000000__20:
+total legal positions: 7497
+number of winning positions: 3294
+number of losing positions: 3933
+number of drawing positions: 270
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 2447
+
+Tier 000002000000__11:
+total legal positions: 3294
+number of winning positions: 1422
+number of losing positions: 1872
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 3225
+
+Tier 001001000000__2:
+total legal positions: 6072
+number of winning positions: 198
+number of losing positions: 12
+number of drawing positions: 5862
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 9993
+
+Tier 100001000000__2:
+total legal positions: 4098
+number of winning positions: 465
+number of losing positions: 180
+number of drawing positions: 3453
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 5493
+
+Tier 000010000000_3_:
+total legal positions: 999
+number of winning positions: 486
+number of losing positions: 513
+number of drawing positions: 0
+longest win for red is 13 steps at position 1420
+longest win for black is 0 steps at position 0
+
+Tier 000010000001_2_:
+total legal positions: 72243
+number of winning positions: 36207
+number of losing positions: 35958
+number of drawing positions: 78
+longest win for red is 19 steps at position 123732
+longest win for black is 13 steps at position 111893
+
+Tier 000010000010_2_:
+total legal positions: 73632
+number of winning positions: 30054
+number of losing positions: 43578
+number of drawing positions: 0
+longest win for red is 5 steps at position 115882
+longest win for black is 0 steps at position 0
+
+Tier 000010000100_2_:
+total legal positions: 81468
+number of winning positions: 2031
+number of losing positions: 96
+number of drawing positions: 79341
+longest win for red is 19 steps at position 123732
+longest win for black is 0 steps at position 0
+
+Tier 000010001000_2_:
+total legal positions: 81294
+number of winning positions: 37716
+number of losing positions: 40803
+number of drawing positions: 2775
+longest win for red is 11 steps at position 125276
+longest win for black is 0 steps at position 0
+
+Tier 000010010000_2_:
+total legal positions: 78669
+number of winning positions: 7920
+number of losing positions: 324
+number of drawing positions: 70425
+longest win for red is 19 steps at position 108030
+longest win for black is 15 steps at position 107375
+
+Tier 000010100000_2_:
+total legal positions: 79317
+number of winning positions: 35739
+number of losing positions: 43578
+number of drawing positions: 0
+longest win for red is 11 steps at position 115882
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_0_2:
+total legal positions: 7554
+number of winning positions: 241
+number of losing positions: 11
+number of drawing positions: 7302
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 12385
+
+Tier 000011000000_1_1:
+total legal positions: 7314
+number of winning positions: 704
+number of losing positions: 22
+number of drawing positions: 6588
+longest win for red is 19 steps at position 4060
+longest win for black is 19 steps at position 10621
+
+Tier 000011000000_2_0:
+total legal positions: 7554
+number of winning positions: 241
+number of losing positions: 11
+number of drawing positions: 7302
+longest win for red is 13 steps at position 8416
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_20_:
+total legal positions: 7497
+number of winning positions: 3294
+number of losing positions: 3933
+number of drawing positions: 270
+longest win for red is 11 steps at position 11986
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_11_:
+total legal positions: 3294
+number of winning positions: 1422
+number of losing positions: 1872
+number of drawing positions: 0
+longest win for red is 13 steps at position 5528
+longest win for black is 0 steps at position 0
+
+Tier 000110000000_2_:
+total legal positions: 6072
+number of winning positions: 198
+number of losing positions: 12
+number of drawing positions: 5862
+longest win for red is 13 steps at position 9914
+longest win for black is 0 steps at position 0
+
+Tier 010010000000_2_:
+total legal positions: 4098
+number of winning positions: 465
+number of losing positions: 180
+number of drawing positions: 3453
+longest win for red is 13 steps at position 6428
+longest win for black is 0 steps at position 0
+
+Tier 000101000000__4:
+total legal positions: 7164
+number of winning positions: 3582
+number of losing positions: 3582
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 9071
+
+Tier 001010000000_4_:
+total legal positions: 7164
+number of winning positions: 3582
+number of losing positions: 3582
+number of drawing positions: 0
+longest win for red is 15 steps at position 10078
+longest win for black is 0 steps at position 0
+
+Tier 010001000000__4:
+total legal positions: 4800
+number of winning positions: 2400
+number of losing positions: 2400
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 5743
+
+Tier 100010000000_4_:
+total legal positions: 4800
+number of winning positions: 2400
+number of losing positions: 2400
+number of drawing positions: 0
+longest win for red is 15 steps at position 6444
+longest win for black is 0 steps at position 0
+
+Tier 000001000000__4:
+total legal positions: 1026
+number of winning positions: 513
+number of losing positions: 513
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 1295
+
+Tier 000001000001__3:
+total legal positions: 80325
+number of winning positions: 34398
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 37973
+
+Tier 000001000010__3:
+total legal positions: 79812
+number of winning positions: 38586
+number of losing positions: 41196
+number of drawing positions: 30
+longest win for red is 15 steps at position 13194
+longest win for black is 15 steps at position 112525
+
+Tier 000001000100__3:
+total legal positions: 89217
+number of winning positions: 43290
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 125413
+
+Tier 000001001000__3:
+total legal positions: 89316
+number of winning positions: 2490
+number of losing positions: 108
+number of drawing positions: 86718
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 38779
+
+Tier 000001010000__3:
+total legal positions: 86787
+number of winning positions: 40860
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 70313
+
+Tier 000001100000__3:
+total legal positions: 86427
+number of winning positions: 6506
+number of losing positions: 355
+number of drawing positions: 79566
+longest win for red is 13 steps at position 126254
+longest win for black is 21 steps at position 32757
+
+Tier 000002000000__30:
+total legal positions: 8307
+number of winning positions: 3861
+number of losing positions: 4446
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 12815
+
+Tier 000002000000__21:
+total legal positions: 7479
+number of winning positions: 3204
+number of losing positions: 4275
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 11663
+
+Tier 001001000000__3:
+total legal positions: 6984
+number of winning positions: 162
+number of losing positions: 0
+number of drawing positions: 6822
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 9991
+
+Tier 100001000000__3:
+total legal positions: 4683
+number of winning positions: 330
+number of losing positions: 69
+number of drawing positions: 4284
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 5479
+
+Tier 000010000000_4_:
+total legal positions: 1026
+number of winning positions: 513
+number of losing positions: 513
+number of drawing positions: 0
+longest win for red is 15 steps at position 1438
+longest win for black is 0 steps at position 0
+
+Tier 000010000001_3_:
+total legal positions: 79812
+number of winning positions: 38586
+number of losing positions: 41196
+number of drawing positions: 30
+longest win for red is 15 steps at position 124998
+longest win for black is 15 steps at position 122695
+
+Tier 000010000010_3_:
+total legal positions: 80325
+number of winning positions: 34398
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 5 steps at position 115882
+longest win for black is 0 steps at position 0
+
+Tier 000010000100_3_:
+total legal positions: 89316
+number of winning positions: 2490
+number of losing positions: 108
+number of drawing positions: 86718
+longest win for red is 17 steps at position 122518
+longest win for black is 0 steps at position 0
+
+Tier 000010001000_3_:
+total legal positions: 89217
+number of winning positions: 43290
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 13 steps at position 125430
+longest win for black is 0 steps at position 0
+
+Tier 000010010000_3_:
+total legal positions: 86427
+number of winning positions: 6506
+number of losing positions: 355
+number of drawing positions: 79566
+longest win for red is 21 steps at position 103332
+longest win for black is 13 steps at position 38923
+
+Tier 000010100000_3_:
+total legal positions: 86787
+number of winning positions: 40860
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 13 steps at position 120580
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_0_3:
+total legal positions: 8316
+number of winning positions: 282
+number of losing positions: 9
+number of drawing positions: 8025
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 11123
+
+Tier 000011000000_1_2:
+total legal positions: 7458
+number of winning positions: 602
+number of losing positions: 11
+number of drawing positions: 6845
+longest win for red is 19 steps at position 8434
+longest win for black is 13 steps at position 11899
+
+Tier 000011000000_2_1:
+total legal positions: 7458
+number of winning positions: 602
+number of losing positions: 11
+number of drawing positions: 6845
+longest win for red is 13 steps at position 4042
+longest win for black is 19 steps at position 11107
+
+Tier 000011000000_3_0:
+total legal positions: 8316
+number of winning positions: 282
+number of losing positions: 9
+number of drawing positions: 8025
+longest win for red is 15 steps at position 8578
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_30_:
+total legal positions: 8307
+number of winning positions: 3861
+number of losing positions: 4446
+number of drawing positions: 0
+longest win for red is 13 steps at position 12796
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_21_:
+total legal positions: 7479
+number of winning positions: 3204
+number of losing positions: 4275
+number of drawing positions: 0
+longest win for red is 11 steps at position 12958
+longest win for black is 0 steps at position 0
+
+Tier 000110000000_3_:
+total legal positions: 6984
+number of winning positions: 162
+number of losing positions: 0
+number of drawing positions: 6822
+longest win for red is 13 steps at position 9916
+longest win for black is 0 steps at position 0
+
+Tier 010010000000_3_:
+total legal positions: 4683
+number of winning positions: 330
+number of losing positions: 69
+number of drawing positions: 4284
+longest win for red is 13 steps at position 5712
+longest win for black is 0 steps at position 0
+
+Tier 000101000000__5:
+total legal positions: 3672
+number of winning positions: 1836
+number of losing positions: 1836
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 5591
+
+Tier 001010000000_5_:
+total legal positions: 3672
+number of winning positions: 1836
+number of losing positions: 1836
+number of drawing positions: 0
+longest win for red is 17 steps at position 5528
+longest win for black is 0 steps at position 0
+
+Tier 010001000000__5:
+total legal positions: 2628
+number of winning positions: 1314
+number of losing positions: 1314
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 3591
+
+Tier 100010000000_5_:
+total legal positions: 2628
+number of winning positions: 1314
+number of losing positions: 1314
+number of drawing positions: 0
+longest win for red is 17 steps at position 3590
+longest win for black is 0 steps at position 0
+
+Tier 000001000000__5:
+total legal positions: 558
+number of winning positions: 279
+number of losing positions: 279
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 791
+
+Tier 000001000001__4:
+total legal positions: 82323
+number of winning positions: 36396
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 37973
+
+Tier 000001000010__4:
+total legal positions: 82242
+number of winning positions: 38832
+number of losing positions: 43410
+number of drawing positions: 0
+longest win for red is 11 steps at position 21060
+longest win for black is 17 steps at position 123977
+
+Tier 000001000100__4:
+total legal positions: 91503
+number of winning positions: 45576
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 112749
+
+Tier 000001001000__4:
+total legal positions: 91584
+number of winning positions: 2553
+number of losing positions: 0
+number of drawing positions: 89031
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 123977
+
+Tier 000001010000__4:
+total legal positions: 88812
+number of winning positions: 42885
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 70313
+
+Tier 000001100000__4:
+total legal positions: 88776
+number of winning positions: 7524
+number of losing positions: 442
+number of drawing positions: 80810
+longest win for red is 17 steps at position 123150
+longest win for black is 23 steps at position 75039
+
+Tier 000002000000__40:
+total legal positions: 8550
+number of winning positions: 4104
+number of losing positions: 4446
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 11663
+
+Tier 000002000000__31:
+total legal positions: 8208
+number of winning positions: 3690
+number of losing positions: 4518
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 7289
+
+Tier 000002000000__22:
+total legal positions: 3438
+number of winning positions: 1494
+number of losing positions: 1944
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 9 steps at position 5689
+
+Tier 001001000000__4:
+total legal positions: 6948
+number of winning positions: 216
+number of losing positions: 0
+number of drawing positions: 6732
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 9961
+
+Tier 100001000000__4:
+total legal positions: 4800
+number of winning positions: 69
+number of losing positions: 6
+number of drawing positions: 4725
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 5497
+
+Tier 000010000000_5_:
+total legal positions: 558
+number of winning positions: 279
+number of losing positions: 279
+number of drawing positions: 0
+longest win for red is 17 steps at position 788
+longest win for black is 0 steps at position 0
+
+Tier 000010000001_4_:
+total legal positions: 82242
+number of winning positions: 38832
+number of losing positions: 43410
+number of drawing positions: 0
+longest win for red is 17 steps at position 123450
+longest win for black is 11 steps at position 68197
+
+Tier 000010000010_4_:
+total legal positions: 82323
+number of winning positions: 36396
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 5 steps at position 115882
+longest win for black is 0 steps at position 0
+
+Tier 000010000100_4_:
+total legal positions: 91584
+number of winning positions: 2553
+number of losing positions: 0
+number of drawing positions: 89031
+longest win for red is 17 steps at position 123450
+longest win for black is 0 steps at position 0
+
+Tier 000010001000_4_:
+total legal positions: 91503
+number of winning positions: 45576
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 15 steps at position 125276
+longest win for black is 0 steps at position 0
+
+Tier 000010010000_4_:
+total legal positions: 88776
+number of winning positions: 7524
+number of losing positions: 442
+number of drawing positions: 80810
+longest win for red is 23 steps at position 108030
+longest win for black is 17 steps at position 38969
+
+Tier 000010100000_4_:
+total legal positions: 88812
+number of winning positions: 42885
+number of losing positions: 45927
+number of drawing positions: 0
+longest win for red is 13 steps at position 120580
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_0_4:
+total legal positions: 8550
+number of winning positions: 303
+number of losing positions: 0
+number of drawing positions: 8247
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 12385
+
+Tier 000011000000_1_3:
+total legal positions: 8217
+number of winning positions: 444
+number of losing positions: 9
+number of drawing positions: 7764
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 10637
+
+Tier 000011000000_2_2:
+total legal positions: 7596
+number of winning positions: 482
+number of losing positions: 0
+number of drawing positions: 7114
+longest win for red is 13 steps at position 8416
+longest win for black is 13 steps at position 12385
+
+Tier 000011000000_3_1:
+total legal positions: 8217
+number of winning positions: 444
+number of losing positions: 9
+number of drawing positions: 7764
+longest win for red is 15 steps at position 4204
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_4_0:
+total legal positions: 8550
+number of winning positions: 303
+number of losing positions: 0
+number of drawing positions: 8247
+longest win for red is 17 steps at position 8416
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_40_:
+total legal positions: 8550
+number of winning positions: 4104
+number of losing positions: 4446
+number of drawing positions: 0
+longest win for red is 15 steps at position 12958
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_31_:
+total legal positions: 8208
+number of winning positions: 3690
+number of losing positions: 4518
+number of drawing positions: 0
+longest win for red is 13 steps at position 12472
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_22_:
+total legal positions: 3438
+number of winning positions: 1494
+number of losing positions: 1944
+number of drawing positions: 0
+longest win for red is 9 steps at position 5744
+longest win for black is 0 steps at position 0
+
+Tier 000110000000_4_:
+total legal positions: 6948
+number of winning positions: 216
+number of losing positions: 0
+number of drawing positions: 6732
+longest win for red is 13 steps at position 9950
+longest win for black is 0 steps at position 0
+
+Tier 010010000000_4_:
+total legal positions: 4800
+number of winning positions: 69
+number of losing positions: 6
+number of drawing positions: 4725
+longest win for red is 13 steps at position 6432
+longest win for black is 0 steps at position 0
+
+Tier 000101000000__6:
+total legal positions: 3888
+number of winning positions: 1944
+number of losing positions: 1944
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 5039
+
+Tier 001010000000_6_:
+total legal positions: 3888
+number of winning positions: 1944
+number of losing positions: 1944
+number of drawing positions: 0
+longest win for red is 19 steps at position 5598
+longest win for black is 0 steps at position 0
+
+Tier 010001000000__6:
+total legal positions: 2628
+number of winning positions: 1314
+number of losing positions: 1314
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 3191
+
+Tier 100010000000_6_:
+total legal positions: 2628
+number of winning positions: 1314
+number of losing positions: 1314
+number of drawing positions: 0
+longest win for red is 19 steps at position 3580
+longest win for black is 0 steps at position 0
+
+Tier 000001000000__6:
+total legal positions: 558
+number of winning positions: 279
+number of losing positions: 279
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 719
+
+Tier 000001000001__5:
+total legal positions: 44694
+number of winning positions: 19665
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 21095
+
+Tier 000001000010__5:
+total legal positions: 44721
+number of winning positions: 20559
+number of losing positions: 24162
+number of drawing positions: 0
+longest win for red is 9 steps at position 69250
+longest win for black is 19 steps at position 59901
+
+Tier 000001000100__5:
+total legal positions: 49968
+number of winning positions: 24939
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 69733
+
+Tier 000001001000__5:
+total legal positions: 49941
+number of winning positions: 867
+number of losing positions: 0
+number of drawing positions: 49074
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 59901
+
+Tier 000001010000__5:
+total legal positions: 48384
+number of winning positions: 23355
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 38993
+
+Tier 000001100000__5:
+total legal positions: 48408
+number of winning positions: 6847
+number of losing positions: 1232
+number of drawing positions: 40329
+longest win for red is 35 steps at position 21244
+longest win for black is 25 steps at position 18141
+
+Tier 000002000000__50:
+total legal positions: 4650
+number of winning positions: 2232
+number of losing positions: 2418
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 7127
+
+Tier 000002000000__41:
+total legal positions: 8451
+number of winning positions: 3933
+number of losing positions: 4518
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 11647
+
+Tier 000002000000__32:
+total legal positions: 8433
+number of winning positions: 3843
+number of losing positions: 4590
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 11179
+
+Tier 001001000000__5:
+total legal positions: 3888
+number of winning positions: 108
+number of losing positions: 0
+number of drawing positions: 3780
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 5533
+
+Tier 100001000000__5:
+total legal positions: 2628
+number of winning positions: 6
+number of losing positions: 0
+number of drawing positions: 2622
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 165
+
+Tier 000010000000_6_:
+total legal positions: 558
+number of winning positions: 279
+number of losing positions: 279
+number of drawing positions: 0
+longest win for red is 19 steps at position 798
+longest win for black is 0 steps at position 0
+
+Tier 000010000001_5_:
+total legal positions: 44721
+number of winning positions: 20559
+number of losing positions: 24162
+number of drawing positions: 0
+longest win for red is 19 steps at position 46102
+longest win for black is 9 steps at position 68295
+
+Tier 000010000010_5_:
+total legal positions: 44694
+number of winning positions: 19665
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 5 steps at position 56176
+longest win for black is 0 steps at position 0
+
+Tier 000010000100_5_:
+total legal positions: 49941
+number of winning positions: 867
+number of losing positions: 0
+number of drawing positions: 49074
+longest win for red is 19 steps at position 46102
+longest win for black is 0 steps at position 0
+
+Tier 000010001000_5_:
+total legal positions: 49968
+number of winning positions: 24939
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 17 steps at position 69750
+longest win for black is 0 steps at position 0
+
+Tier 000010010000_5_:
+total legal positions: 48408
+number of winning positions: 6847
+number of losing positions: 1232
+number of drawing positions: 40329
+longest win for red is 25 steps at position 57396
+longest win for black is 35 steps at position 7481
+
+Tier 000010100000_5_:
+total legal positions: 48384
+number of winning positions: 23355
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 13 steps at position 66988
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_0_5:
+total legal positions: 4650
+number of winning positions: 165
+number of losing positions: 0
+number of drawing positions: 4485
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 6179
+
+Tier 000011000000_1_4:
+total legal positions: 8451
+number of winning positions: 474
+number of losing positions: 0
+number of drawing positions: 7977
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 11899
+
+Tier 000011000000_2_3:
+total legal positions: 8361
+number of winning positions: 282
+number of losing positions: 0
+number of drawing positions: 8079
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 11123
+
+Tier 000011000000_3_2:
+total legal positions: 8361
+number of winning positions: 282
+number of losing positions: 0
+number of drawing positions: 8079
+longest win for red is 15 steps at position 8578
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_4_1:
+total legal positions: 8451
+number of winning positions: 474
+number of losing positions: 0
+number of drawing positions: 7977
+longest win for red is 17 steps at position 4042
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_5_0:
+total legal positions: 4650
+number of winning positions: 165
+number of losing positions: 0
+number of drawing positions: 4485
+longest win for red is 19 steps at position 4762
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_50_:
+total legal positions: 4650
+number of winning positions: 2232
+number of losing positions: 2418
+number of drawing positions: 0
+longest win for red is 17 steps at position 7108
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_41_:
+total legal positions: 8451
+number of winning positions: 3933
+number of losing positions: 4518
+number of drawing positions: 0
+longest win for red is 15 steps at position 12814
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_32_:
+total legal positions: 8433
+number of winning positions: 3843
+number of losing positions: 4590
+number of drawing positions: 0
+longest win for red is 11 steps at position 12958
+longest win for black is 0 steps at position 0
+
+Tier 000110000000_5_:
+total legal positions: 3888
+number of winning positions: 108
+number of losing positions: 0
+number of drawing positions: 3780
+longest win for red is 13 steps at position 5526
+longest win for black is 0 steps at position 0
+
+Tier 010010000000_5_:
+total legal positions: 2628
+number of winning positions: 6
+number of losing positions: 0
+number of drawing positions: 2622
+longest win for red is 11 steps at position 2994
+longest win for black is 0 steps at position 0
+
+Tier 000001000001__6:
+total legal positions: 44667
+number of winning positions: 19638
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 5 steps at position 21095
+
+Tier 000001000010__6:
+total legal positions: 44748
+number of winning positions: 20586
+number of losing positions: 24162
+number of drawing positions: 0
+longest win for red is 9 steps at position 69250
+longest win for black is 21 steps at position 66163
+
+Tier 000001000100__6:
+total legal positions: 49995
+number of winning positions: 24966
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 62637
+
+Tier 000001001000__6:
+total legal positions: 49914
+number of winning positions: 867
+number of losing positions: 0
+number of drawing positions: 49047
+longest win for red is 0 steps at position 0
+longest win for black is 21 steps at position 66163
+
+Tier 000001010000__6:
+total legal positions: 48384
+number of winning positions: 23355
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 38993
+
+Tier 000001100000__6:
+total legal positions: 48468
+number of winning positions: 13164
+number of losing positions: 5531
+number of drawing positions: 29773
+longest win for red is 41 steps at position 21380
+longest win for black is 27 steps at position 41631
+
+Tier 000002000000__60:
+total legal positions: 4650
+number of winning positions: 2232
+number of losing positions: 2418
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 6479
+
+Tier 000002000000__51:
+total legal positions: 4599
+number of winning positions: 2139
+number of losing positions: 2460
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 4033
+
+Tier 000002000000__42:
+total legal positions: 8595
+number of winning positions: 4005
+number of losing positions: 4590
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 11663
+
+Tier 000002000000__33:
+total legal positions: 4104
+number of winning positions: 1944
+number of losing positions: 2160
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 5183
+
+Tier 001001000000__6:
+total legal positions: 3888
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 3888
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 100001000000__6:
+total legal positions: 2628
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 2628
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000010000001_6_:
+total legal positions: 44748
+number of winning positions: 20586
+number of losing positions: 24162
+number of drawing positions: 0
+longest win for red is 21 steps at position 45232
+longest win for black is 9 steps at position 68313
+
+Tier 000010000010_6_:
+total legal positions: 44667
+number of winning positions: 19638
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 5 steps at position 60526
+longest win for black is 0 steps at position 0
+
+Tier 000010000100_6_:
+total legal positions: 49914
+number of winning positions: 867
+number of losing positions: 0
+number of drawing positions: 49047
+longest win for red is 21 steps at position 45232
+longest win for black is 0 steps at position 0
+
+Tier 000010001000_6_:
+total legal positions: 49995
+number of winning positions: 24966
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 19 steps at position 69596
+longest win for black is 0 steps at position 0
+
+Tier 000010010000_6_:
+total legal positions: 48468
+number of winning positions: 13164
+number of losing positions: 5531
+number of drawing positions: 29773
+longest win for red is 27 steps at position 60006
+longest win for black is 41 steps at position 7341
+
+Tier 000010100000_6_:
+total legal positions: 48384
+number of winning positions: 23355
+number of losing positions: 25029
+number of drawing positions: 0
+longest win for red is 13 steps at position 66988
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_0_6:
+total legal positions: 4650
+number of winning positions: 165
+number of losing positions: 0
+number of drawing positions: 4485
+longest win for red is 0 steps at position 0
+longest win for black is 21 steps at position 6881
+
+Tier 000011000000_1_5:
+total legal positions: 4599
+number of winning positions: 258
+number of losing positions: 0
+number of drawing positions: 4341
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 5909
+
+Tier 000011000000_2_4:
+total legal positions: 8595
+number of winning positions: 303
+number of losing positions: 0
+number of drawing positions: 8292
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 12385
+
+Tier 000011000000_3_3:
+total legal positions: 9180
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 9180
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_4_2:
+total legal positions: 8595
+number of winning positions: 303
+number of losing positions: 0
+number of drawing positions: 8292
+longest win for red is 17 steps at position 8416
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_5_1:
+total legal positions: 4599
+number of winning positions: 258
+number of losing positions: 0
+number of drawing positions: 4341
+longest win for red is 19 steps at position 2332
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_6_0:
+total legal positions: 4650
+number of winning positions: 165
+number of losing positions: 0
+number of drawing positions: 4485
+longest win for red is 21 steps at position 4672
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_60_:
+total legal positions: 4650
+number of winning positions: 2232
+number of losing positions: 2418
+number of drawing positions: 0
+longest win for red is 19 steps at position 7198
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_51_:
+total legal positions: 4599
+number of winning positions: 2139
+number of losing positions: 2460
+number of drawing positions: 0
+longest win for red is 17 steps at position 6848
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_42_:
+total legal positions: 8595
+number of winning positions: 4005
+number of losing positions: 4590
+number of drawing positions: 0
+longest win for red is 11 steps at position 12958
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_33_:
+total legal positions: 4104
+number of winning positions: 1944
+number of losing positions: 2160
+number of drawing positions: 0
+longest win for red is 11 steps at position 5758
+longest win for black is 0 steps at position 0
+
+Tier 000110000000_6_:
+total legal positions: 3888
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 3888
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 010010000000_6_:
+total legal positions: 2628
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 2628
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000002000000__61:
+total legal positions: 4599
+number of winning positions: 2139
+number of losing positions: 2460
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 4033
+
+Tier 000002000000__52:
+total legal positions: 4683
+number of winning positions: 2181
+number of losing positions: 2502
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 6479
+
+Tier 000002000000__43:
+total legal positions: 9423
+number of winning positions: 4590
+number of losing positions: 4833
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 12817
+
+Tier 000011000000_1_6:
+total legal positions: 4599
+number of winning positions: 258
+number of losing positions: 0
+number of drawing positions: 4341
+longest win for red is 0 steps at position 0
+longest win for black is 21 steps at position 6611
+
+Tier 000011000000_2_5:
+total legal positions: 4683
+number of winning positions: 165
+number of losing positions: 0
+number of drawing positions: 4518
+longest win for red is 0 steps at position 0
+longest win for black is 19 steps at position 6179
+
+Tier 000011000000_3_4:
+total legal positions: 9423
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 9423
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_4_3:
+total legal positions: 9423
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 9423
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_5_2:
+total legal positions: 4683
+number of winning positions: 165
+number of losing positions: 0
+number of drawing positions: 4518
+longest win for red is 19 steps at position 4762
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_6_1:
+total legal positions: 4599
+number of winning positions: 258
+number of losing positions: 0
+number of drawing positions: 4341
+longest win for red is 21 steps at position 2242
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_61_:
+total legal positions: 4599
+number of winning positions: 2139
+number of losing positions: 2460
+number of drawing positions: 0
+longest win for red is 17 steps at position 6848
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_52_:
+total legal positions: 4683
+number of winning positions: 2181
+number of losing positions: 2502
+number of drawing positions: 0
+longest win for red is 11 steps at position 7198
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_43_:
+total legal positions: 9423
+number of winning positions: 4590
+number of losing positions: 4833
+number of drawing positions: 0
+longest win for red is 13 steps at position 12796
+longest win for black is 0 steps at position 0
+
+Tier 000002000000__62:
+total legal positions: 4683
+number of winning positions: 2181
+number of losing positions: 2502
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 11 steps at position 6479
+
+Tier 000002000000__53:
+total legal positions: 5139
+number of winning positions: 2502
+number of losing positions: 2637
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 7183
+
+Tier 000002000000__44:
+total legal positions: 4320
+number of winning positions: 2160
+number of losing positions: 2160
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 5689
+
+Tier 000011000000_2_6:
+total legal positions: 4683
+number of winning positions: 165
+number of losing positions: 0
+number of drawing positions: 4518
+longest win for red is 0 steps at position 0
+longest win for black is 21 steps at position 6881
+
+Tier 000011000000_3_5:
+total legal positions: 5139
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 5139
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_4_4:
+total legal positions: 9666
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 9666
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_5_3:
+total legal positions: 5139
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 5139
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_6_2:
+total legal positions: 4683
+number of winning positions: 165
+number of losing positions: 0
+number of drawing positions: 4518
+longest win for red is 21 steps at position 4672
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_62_:
+total legal positions: 4683
+number of winning positions: 2181
+number of losing positions: 2502
+number of drawing positions: 0
+longest win for red is 11 steps at position 7198
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_53_:
+total legal positions: 5139
+number of winning positions: 2502
+number of losing positions: 2637
+number of drawing positions: 0
+longest win for red is 13 steps at position 7108
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_44_:
+total legal positions: 4320
+number of winning positions: 2160
+number of losing positions: 2160
+number of drawing positions: 0
+longest win for red is 13 steps at position 5744
+longest win for black is 0 steps at position 0
+
+Tier 000002000000__63:
+total legal positions: 5139
+number of winning positions: 2502
+number of losing positions: 2637
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 13 steps at position 7183
+
+Tier 000002000000__54:
+total legal positions: 5274
+number of winning positions: 2637
+number of losing positions: 2637
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 6479
+
+Tier 000011000000_3_6:
+total legal positions: 4590
+number of winning positions: 450
+number of losing positions: 24
+number of drawing positions: 4116
+longest win for red is 15 steps at position 6398
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_4_5:
+total legal positions: 4716
+number of winning positions: 450
+number of losing positions: 0
+number of drawing positions: 4266
+longest win for red is 17 steps at position 6318
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_5_4:
+total legal positions: 4716
+number of winning positions: 450
+number of losing positions: 0
+number of drawing positions: 4266
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 6321
+
+Tier 000011000000_6_3:
+total legal positions: 4590
+number of winning positions: 450
+number of losing positions: 24
+number of drawing positions: 4116
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 5759
+
+Tier 000020000000_63_:
+total legal positions: 5139
+number of winning positions: 2502
+number of losing positions: 2637
+number of drawing positions: 0
+longest win for red is 13 steps at position 7108
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_54_:
+total legal positions: 5274
+number of winning positions: 2637
+number of losing positions: 2637
+number of drawing positions: 0
+longest win for red is 15 steps at position 7198
+longest win for black is 0 steps at position 0
+
+Tier 000002000000__64:
+total legal positions: 5274
+number of winning positions: 2637
+number of losing positions: 2637
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 6479
+
+Tier 000002000000__55:
+total legal positions: 1152
+number of winning positions: 576
+number of losing positions: 576
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 15 steps at position 893
+
+Tier 000011000000_4_6:
+total legal positions: 5274
+number of winning positions: 582
+number of losing positions: 0
+number of drawing positions: 4692
+longest win for red is 15 steps at position 7198
+longest win for black is 19 steps at position 6479
+
+Tier 000011000000_5_5:
+total legal positions: 2862
+number of winning positions: 558
+number of losing positions: 0
+number of drawing positions: 2304
+longest win for red is 17 steps at position 3948
+longest win for black is 17 steps at position 3951
+
+Tier 000011000000_6_4:
+total legal positions: 5274
+number of winning positions: 582
+number of losing positions: 0
+number of drawing positions: 4692
+longest win for red is 19 steps at position 7198
+longest win for black is 15 steps at position 6479
+
+Tier 000020000000_64_:
+total legal positions: 5274
+number of winning positions: 2637
+number of losing positions: 2637
+number of drawing positions: 0
+longest win for red is 15 steps at position 7198
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_55_:
+total legal positions: 1152
+number of winning positions: 576
+number of losing positions: 576
+number of drawing positions: 0
+longest win for red is 15 steps at position 1532
+longest win for black is 0 steps at position 0
+
+Tier 000002000000__65:
+total legal positions: 2862
+number of winning positions: 1431
+number of losing positions: 1431
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 3951
+
+Tier 000011000000_5_6:
+total legal positions: 2862
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 2862
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000011000000_6_5:
+total legal positions: 2862
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 2862
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_65_:
+total legal positions: 2862
+number of winning positions: 1431
+number of losing positions: 1431
+number of drawing positions: 0
+longest win for red is 17 steps at position 3948
+longest win for black is 0 steps at position 0
+
+Tier 000002000000__66:
+total legal positions: 1152
+number of winning positions: 576
+number of losing positions: 576
+number of drawing positions: 0
+longest win for red is 0 steps at position 0
+longest win for black is 17 steps at position 1433
+
+Tier 000011000000_6_6:
+total legal positions: 2862
+number of winning positions: 0
+number of losing positions: 0
+number of drawing positions: 2862
+longest win for red is 0 steps at position 0
+longest win for black is 0 steps at position 0
+
+Tier 000020000000_66_:
+total legal positions: 1152
+number of winning positions: 576
+number of losing positions: 576
+number of drawing positions: 0
+longest win for red is 17 steps at position 1592
+longest win for black is 0 steps at position 0
+
+solve_local: solver done.

@@ -5,6 +5,4 @@
 *.txt
 *.ods
 .vscode
-*.log
-log
 *.o
