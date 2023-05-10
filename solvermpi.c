@@ -144,7 +144,11 @@ static void remove_tier_from_solving(const char *tier) {
 }
 
 static void move_solvable_head_to_solving(void) {
-    if (!solvableTiersHead) return;
+    if (!solvableTiersHead) {
+        /* This should never happen. */
+        printf("move_solvable_head_to_solving: solvable list is empty.\n");
+        return;
+    }
     tier_tree_entry_t *detached = solvableTiersHead;
     solvableTiersHead = detached->next;
     detached->next = solvingTiers;
@@ -233,7 +237,7 @@ void solve_mpi_worker(uint64_t mem, bool force) {
 
     /* Spin forever until a "terminate" message is recieved from the manager node. */
     while (true) {
-        MPI_Send(buf, MPI_MSG_LEN, MPI_INT8_T,  MPI_MANAGER_NODE, MPI_MSG_TAG, MPI_COMM_WORLD);
+        MPI_Send(buf, MPI_MSG_LEN, MPI_INT8_T, MPI_MANAGER_NODE, MPI_MSG_TAG, MPI_COMM_WORLD);
         MPI_Recv(buf, MPI_MSG_LEN, MPI_INT8_T, MPI_MANAGER_NODE, MPI_MSG_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
         if (strncmp(buf, "sleep", MPI_MSG_LEN) == 0) {
@@ -249,7 +253,7 @@ void solve_mpi_worker(uint64_t mem, bool force) {
             /* Assmues the received string contains a valid tier
                that is now ready to be solved. */
             memcpy(tier, buf, TIER_STR_LENGTH_MAX);
-            tier_solver_stat_t stat = solve_tier(buf, mem, force);
+            tier_solver_stat_t stat = solve_tier(tier, mem, force);
             if (stat.numLegalPos) {
                 /* Solve succeeded. Update global statistics. */
                 update_global_stat(stat);
@@ -257,7 +261,6 @@ void solve_mpi_worker(uint64_t mem, bool force) {
                 /* Solve failed due to OOM. */
                 snprintf(buf, MPI_MSG_LEN, "!%s", tier);
             }
-            MPI_Send(buf, MPI_MSG_LEN, MPI_INT8_T, MPI_MANAGER_NODE, MPI_MSG_TAG, MPI_COMM_WORLD);
         }
     }
 }
