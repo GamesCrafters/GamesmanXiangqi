@@ -183,8 +183,7 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
         memcpy(tiers[i], tier, TIER_STR_LENGTH_MAX);
         next_rem(tier);
     }
-
-//    nthread <<= 5;
+    
     pthread_t *tid = (pthread_t*)safe_calloc(nthread, sizeof(pthread_t*));
     ttbtm_helper_args_t *args = (ttbtm_helper_args_t*)safe_malloc(
                 nthread * sizeof(ttbtm_helper_args_t));
