@@ -81,7 +81,7 @@ void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force)
     while (solvableTiersHead) {
         /* Only solve canonical tiers. */
         if (tier_is_canonical_tier(solvableTiersHead->tier)) {
-            tier_solver_stat_t stat = solve_tier(solvableTiersHead->tier, nthread, mem, force);
+            tier_solver_stat_t stat = solve_tier(solvableTiersHead->tier, mem, force);
             if (stat.numLegalPos) {
                 /* Solve succeeded. Update tier tree. */
                 update_tier_tree(solvableTiersHead->tier, &solvableTiersTail);

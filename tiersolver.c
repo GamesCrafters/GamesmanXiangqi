@@ -31,7 +31,6 @@
 #define RESERVED_VALUE 0
 
 static const char *kTier = NULL;       // Tier being solved.
-static uint64_t kNthread;              // Number of physical threads.
 static tier_solver_stat_t stat;        // Tier solver statistics.
 static fr_t winFR, loseFR;             // Win and lose frontiers.
 static uint64_t **winDivider = NULL;   // Holds the number of positions from each child tier in loseFR (heap).
@@ -186,7 +185,7 @@ static bool process_win_pos(uint16_t childRmt, const char *childPosTier,
     return true;
 }
 
-static bool solve_tier_step_0_initialize(const char *tier, uint64_t nthread, uint64_t mem) {    
+static bool solve_tier_step_0_initialize(const char *tier, uint64_t mem) {    
     uint64_t tierRequiredMem = tier_required_mem(tier);
 
     /* Zero-initialize solver statistics. */
@@ -196,7 +195,6 @@ static bool solve_tier_step_0_initialize(const char *tier, uint64_t nthread, uin
 
     init_FR(); // If OOM, there is a bug.
     kTier = tier;
-    kNthread = nthread;
     tierSize = tier_size(tier);
     omp_init_lock(&nUndChildLock);
     game_init_board(&board);
@@ -420,13 +418,12 @@ static void solve_tier_step_7_cleanup(void) {
 /**
  * @brief Solves TIER and returns solver statistics.
  * @param tier: tier to be solved.
- * @param nthread: number of physical threads to use.
  * @param mem: amount of available physical memory in Bytes.
  * @return Solver statistics including number of valid positions,
  * number of winning and losing positions, and the longest distance
  * to a red/black win.
  */
-tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem, bool force) {
+tier_solver_stat_t solve_tier(const char *tier, uint64_t mem, bool force) {
     if (force) goto _solve;
     /* If the given TIER is already solved, skip solving and return. */
     int db_tier_status = db_check_tier(tier);
@@ -439,7 +436,7 @@ tier_solver_stat_t solve_tier(const char *tier, uint64_t nthread, uint64_t mem, 
 
     /* Solver main algorithm. */
 _solve:
-    if (!solve_tier_step_0_initialize(tier, nthread, mem)) goto _bailout;
+    if (!solve_tier_step_0_initialize(tier, mem)) goto _bailout;
     if (!solve_tier_step_1_load_children()) goto _bailout;    
     if (!solve_tier_step_2_setup_solver_arrays()) goto _bailout;
     if (!solve_tier_step_3_scan_tier()) goto _bailout;

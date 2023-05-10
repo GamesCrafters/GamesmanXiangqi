@@ -2,11 +2,10 @@
 #include "common.h"
 #include "game.h"
 #include "db.h"
-#include <inttypes.h>
 
 // TODO: double check all malloc failures.
 int main() {
     make_triangle();
-    solve_local(2, 1ULL, 2ULL << 30, true);
+    solve_local(3, 1ULL, 2ULL << 30, false);
     return 0;
 }

@@ -8,7 +8,7 @@ void tiersolver_test_solve_single_tier(const char *tier) {
     struct timeval start_time, end_time;
     double elapsed_time;
     gettimeofday(&start_time, NULL); // record start time
-    tier_solver_stat_t stat = solve_tier(tier, 1, 2ULL << 30, true);
+    tier_solver_stat_t stat = solve_tier(tier, 2ULL << 30, true);
     gettimeofday(&end_time, NULL); // record end time
     elapsed_time = (end_time.tv_sec - start_time.tv_sec) * 1000000.0; // convert seconds to microseconds
     elapsed_time += (end_time.tv_usec - start_time.tv_usec); // add microseconds
