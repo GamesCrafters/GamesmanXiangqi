@@ -22,7 +22,6 @@ static tier_solver_stat_t globalStat;
 static TierTreeEntryList *solvableTiersHead = NULL;
 static tier_tree_entry_t *solvableTiersTail = NULL;
 static TierTreeEntryList *solvingTiers = NULL;
-static tier_tree_entry_t *tmp = NULL;
 static int solvedTiers = 0;
 static int skippedTiers = 0;
 static int failedTiers = 0;
@@ -181,7 +180,7 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
 
         /* Keep popping off non-nanonical tiers from the head of the solvable tier list
            until we see the first canonical one or the list becomes empty. */
-        while (solvableTiersHead && !tier_is_canonical_tier(solvableTiersHead)) {
+        while (solvableTiersHead && !tier_is_canonical_tier(solvableTiersHead->tier)) {
             ++skippedTiers;
             solvable_tiers_remove_head();
         }
