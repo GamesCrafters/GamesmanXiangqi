@@ -1,16 +1,15 @@
+#include "common.h"
 #include "db.h"
 #include "frontier.h"
 #include "game.h"
 #include "misc.h"
-#include "tiersolver.h"
 #include "tier.h"
-#include "common.h"
-#include "md5.h"
+#include "tiersolver.h"
 #include <malloc.h>
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <omp.h>
 
 /**
 0: RESERVED – UNREACHEABLE POSITION
@@ -28,7 +27,7 @@
 */
 
 #define FR_SIZE (((UINT16_MAX)-1)>>1)
-#define RESERVED_VALUE 0
+#define RESERVED_VALUE 0 // Refer to the value table.
 
 static const char *kTier = NULL;       // Tier being solved.
 static tier_solver_stat_t stat;        // Tier solver statistics.
@@ -79,23 +78,6 @@ static void destroy_dividers() {
     }
     free(winDivider); winDivider = NULL;
     free(loseDivider); loseDivider = NULL;
-}
-
-static uint16_t *load_values_from_disk(const char *tier, uint64_t size) {
-    FILE *loadfile;
-    uint16_t *values = (uint16_t*)malloc(size * sizeof(uint16_t));
-    if (!values) return NULL;
-    loadfile = db_fopen_tier(tier, "rb");
-    if (!loadfile) {
-        printf("load_values_from_disk: failed to open tier %s\n", tier);
-        exit(1);
-    }
-    if (fread(values, sizeof(uint16_t), size, loadfile) != size) {
-        printf("load_values_from_disk: failed to load all values from tier %s\n", tier);
-        exit(1);
-    }
-    fclose(loadfile);
-    return values;
 }
 
 static bool check_and_load_frontier(uint8_t childIdx, uint64_t hash, uint16_t val) {
@@ -204,7 +186,7 @@ static bool solve_tier_step_0_initialize(const char *tier, uint64_t mem) {
 static bool solve_tier_step_1_0_load_canonical_helper(uint8_t childIdx) {
     bool success = true, loadFRSuccess = true;
     uint64_t childTierSize = tier_size(childTiers.tiers[childIdx]);
-    values = load_values_from_disk(childTiers.tiers[childIdx], childTierSize);
+    values = db_load_tier(childTiers.tiers[childIdx], childTierSize);
     if (!values) return false; // OOM.
 
     /* Scan child tier and load winning/losing positions into frontier. */
@@ -223,7 +205,7 @@ static bool solve_tier_step_1_1_load_noncanonical_helper(uint8_t childIdx) {
     struct TierListElem *canonicalTier = tier_get_canonical_tier(childTiers.tiers[childIdx]);
     if (!canonicalTier) return false; // OOM.
     uint64_t childTierSize = tier_size(canonicalTier->tier);
-    values = load_values_from_disk(canonicalTier->tier, childTierSize);
+    values = db_load_tier(canonicalTier->tier, childTierSize);
     if (!values) return false; // OOM.
 
     /* Scan child tier and load winning/losing positions into frontier. */
@@ -371,38 +353,13 @@ static void solve_tier_step_5_mark_draw_positions(void) {
     free(nUndChild); nUndChild = NULL;
 }
 
-static bool solve_tier_step_6_0_check_tier_file(void) {
-    int db_tier_status = db_check_tier(kTier);
-    if (db_tier_status == DB_TIER_MISSING) return false;
-
-    /* Check if tier file already exists and identical to new data. */
-    FILE *fp = db_fopen_tier(kTier, "rb");
-    if (!fp) return false;
-    MD5_CTX filectx = MDFile(fp);
-    fclose(fp);
-    MD5_CTX valuectx = MDData(values, tierSize * sizeof(uint16_t));
-    if (memcmp(filectx.digest, valuectx.digest, 16)) {
-        printf("fatal error: new solver result does not match old database in tier %s.\n", kTier);
-        exit(1);
-    }
-    printf("md5 test passed.\n");
-    return true;
-}
-
 static void solve_tier_step_6_save_values(void) {
     /* STEP 6: SAVE SOLVER DATA TO DISK. */
     /* First save the tier file. */
-    FILE *fp;
-    if (!solve_tier_step_6_0_check_tier_file()) {
-        fp = db_fopen_tier(kTier, "wb");
-        fwrite(values, sizeof(uint16_t), tierSize, fp);
-        fclose(fp);
-    }
+    db_save_values(kTier, values, tierSize);
 
     /* Then save the stat file as a success indicator. */
-    fp = db_fopen_stat(kTier, "wb");
-    fwrite(&stat, sizeof(stat), 1, fp);
-    fclose(fp);
+    db_save_stat(kTier, stat);
 }
 
 static void solve_tier_step_7_cleanup(void) {

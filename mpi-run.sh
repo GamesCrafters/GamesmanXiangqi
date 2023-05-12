@@ -7,6 +7,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --time=00:05:00
 
+cd bin
 module load gcc openmpi
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 mpirun ./solve

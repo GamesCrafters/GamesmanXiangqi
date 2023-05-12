@@ -18,9 +18,11 @@ typedef struct TierSolverStat {
 } tier_solver_stat_t;
 
 uint16_t db_get_value(const char *tier, uint64_t hash);
-FILE *db_fopen_tier(const char *tier, const char *modes);
-FILE *db_fopen_stat(const char *tier, const char *modes);
 int db_check_tier(const char *tier);
 tier_solver_stat_t db_load_stat(const char *tier);
+
+uint16_t *db_load_tier(const char *tier, uint64_t tierSize);
+void db_save_values(const char *tier, const uint16_t *values, uint64_t tierSize);
+void db_save_stat(const char *tier, const tier_solver_stat_t stat);
 
 #endif // DB_H
