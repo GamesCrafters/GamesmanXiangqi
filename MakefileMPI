@@ -1,5 +1,5 @@
 CC = mpicc
-CFLAGS = -Wall -fopenmp -pthread -lz -g -O3
+CFLAGS = -Wall -DNDEBUG -fopenmp -pthread -lz -O3
 OBJ_DIR = obj
 TEST_DIR = tests
 TEST_OBJ_DIR = $(TEST_DIR)/$(OBJ_DIR)

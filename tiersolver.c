@@ -356,7 +356,7 @@ static void solve_tier_step_5_mark_draw_positions(void) {
 static void solve_tier_step_6_save_values(void) {
     /* STEP 6: SAVE SOLVER DATA TO DISK. */
     /* First save the tier file. */
-    db_save_values(kTier, values, tierSize);
+    db_save_tier(kTier, values, tierSize);
 
     /* Then save the stat file as a success indicator. */
     db_save_stat(kTier, stat);

@@ -13,7 +13,7 @@
 #define DEFAULT_BLOCK_SIZE (1ULL << 20) // 1 MiB
 #define ILLEGAL_BLOCK_SIZE SIZE_MAX
 
-static uInt load_input(uint8_t *inBuf, uint8_t *in,
+static uInt load_input(uint8_t *inBuf, const void *in,
                        size_t offset, size_t *remSize) {
     uInt loadSize = 0;
 
@@ -21,44 +21,44 @@ static uInt load_input(uint8_t *inBuf, uint8_t *in,
     if (*remSize < CHUNK_SIZE) loadSize = *remSize;
     else                       loadSize = CHUNK_SIZE;
     *remSize -= loadSize;
-    memcpy(inBuf, in + offset, loadSize);
+    memcpy(inBuf, (void*)((uint8_t*)in + offset), loadSize);
 
     return loadSize;
 }
 
-static uInt copy_output(uint8_t **out, size_t outOffset, size_t *outCapacity,
+static uInt copy_output(void **out, size_t outOffset, size_t *outCapacity,
                         uint8_t *outBuf, uInt have) {
     if (outOffset + have > *outCapacity) {
         /* Not enough space, reallocate output array. */
         do (*outCapacity) *= 2; while (outOffset + have > *outCapacity);
-        uint8_t *newOut = (uint8_t*)realloc(*out, *outCapacity);
+        void *newOut = realloc(*out, *outCapacity);
         if (!newOut) return ILLEGAL_CHUNK_SIZE;
         *out = newOut;
     }
-    memcpy((*out) + outOffset, outBuf, have);
+    memcpy((void*)((uint8_t*)(*out) + outOffset), outBuf, have);
     return have;
 }
 
-static size_t copy_block(uint8_t **out, size_t outOffset, size_t *outCapacity,
+static size_t copy_block(void **out, size_t outOffset, size_t *outCapacity,
                          uint8_t *outPart, size_t outPartSize) {
     if (outOffset + outPartSize > *outCapacity) {
         /* Not enough space, reallocate output array. */
         do (*outCapacity) *= 2; while (outOffset + outPartSize > *outCapacity);
-        uint8_t *newOut = (uint8_t*)realloc(*out, *outCapacity);
+        void *newOut = realloc(*out, *outCapacity);
         if (!newOut) return ILLEGAL_BLOCK_SIZE;
         *out = newOut;
     }
-    memcpy((*out) + outOffset, outPart, outPartSize);
+    memcpy((void*)((uint8_t*)(*out) + outOffset), outPart, outPartSize);
     return outPartSize;
 }
 
-size_t mgz_deflate(uint8_t **out, uint8_t *in, size_t inSize, int level) {
+size_t mgz_deflate(void **out, const void *in, size_t inSize, int level) {
     int zRet, flush;
     size_t inOffset = 0, outOffset = 0, outCapacity = DEFAULT_OUT_CAPACITY;
     z_stream strm;
     uint8_t *inBuf = (uint8_t*)malloc(CHUNK_SIZE);
     uint8_t *outBuf = (uint8_t*)malloc(CHUNK_SIZE);
-    *out = (uint8_t*)malloc(outCapacity);
+    *out = malloc(outCapacity);
     if (!inBuf || !outBuf || !(*out)) {
         printf("mgz_deflate: malloc failed.\n");
         free(*out); *out = NULL;
@@ -116,7 +116,7 @@ _bailout:
     return outOffset;
 }
 
-size_t mgz_parallel_deflate(uint8_t **out, uint8_t *in, size_t inSize,
+size_t mgz_parallel_deflate(void **out, const void *in, size_t inSize,
                             int level, size_t blockSize) {
     if (blockSize == 0) blockSize = DEFAULT_BLOCK_SIZE;
     else if (blockSize < MIN_BLOCK_SIZE) {
@@ -128,8 +128,8 @@ size_t mgz_parallel_deflate(uint8_t **out, uint8_t *in, size_t inSize,
     /* Allocate space for the output of each block. */
     size_t nBlocks = (inSize + blockSize - 1) / blockSize; // Round up division.
     size_t outOffset = 0, outCapacity = DEFAULT_OUT_CAPACITY;
-    *out = (uint8_t*)malloc(outCapacity);
-    uint8_t **outParts = (uint8_t**)calloc(nBlocks, sizeof(uint8_t*));
+    *out = malloc(outCapacity);
+    void **outParts = (void**)calloc(nBlocks, sizeof(void*));
     size_t *outPartSizes = (size_t*)malloc(nBlocks * sizeof(size_t));
     if (!(*out) || !outParts || !outPartSizes) {
         printf("mgz_parallel_deflate: malloc failed.\n");
@@ -143,7 +143,7 @@ size_t mgz_parallel_deflate(uint8_t **out, uint8_t *in, size_t inSize,
     for (size_t i = 0; i < nBlocks; ++i) {
         size_t thisBlockSize = (i == nBlocks - 1) ?
                                inSize - i * blockSize : blockSize;
-        outPartSizes[i] = mgz_deflate(&outParts[i], in + i * blockSize,
+        outPartSizes[i] = mgz_deflate(&outParts[i], (void*)((uint8_t*)in + i * blockSize),
                                       thisBlockSize, level);
         if (outPartSizes[i] == 0) oom = true;
     }
