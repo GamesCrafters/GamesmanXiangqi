@@ -22,6 +22,7 @@
 static void get_rem(const char *tier, char *rem);
 static char *get_dirname(const char *tier);
 static char *get_tier_filename(const char *tier, bool gz);
+static char *get_lookup_filename(const char *tier);
 static char *get_stat_filename(const char *tier);
 
 static FILE *fopen_tier(const char *tier, const char *modes, bool gz) {
@@ -50,6 +51,20 @@ static gzFile gzopen_tier(const char *tier, const char *modes) {
     gzFile file = gzopen(filename, modes);
     free(filename);
     return file;
+}
+
+static FILE *fopen_lookup(const char *tier, const char *modes) {
+    char *dirname = get_dirname(tier);
+    char *lookupFileName = get_lookup_filename(tier);
+
+    /* Create target directory. */
+    mkdir(dirname, 0777);
+    free(dirname);
+
+    /* Open file from target directory. */
+    FILE *fp = fopen(lookupFileName, modes);
+    free(lookupFileName);
+    return fp;
 }
 
 static FILE *fopen_stat(const char *tier, const char *modes) {
@@ -156,18 +171,36 @@ static bool tier_file_is_valid(const char *tier, const uint16_t *values,
     return true;
 }
 
+static void db_save_tier_write_lookup_table(const char *tier,
+                                            uint64_t *outBlockSizes,
+                                            uint64_t nOutBlocks) {
+    uint64_t t1 = 0, t2 = 0;
+    for (uint64_t i = 0; i < nOutBlocks; ++i) {
+        t2 = t1 + outBlockSizes[i];
+        outBlockSizes[i] = t1;
+        t1 = t2;
+    }
+    FILE *fp = fopen_lookup(tier, "wb");
+    fwrite(&nOutBlocks, sizeof(uint64_t), 1, fp);
+    fwrite(outBlockSizes, sizeof(uint64_t), nOutBlocks, fp);
+    fclose(fp);
+    free(outBlockSizes);
+}
+
 void db_save_tier(const char *tier, const uint16_t *values, uint64_t tierSize) {
     /* If the tier file is believed to be intact, skip saving. */
     if (tier_file_is_valid(tier, values, tierSize)) return;
-    void *out;
-    size_t outSize = mgz_parallel_deflate(&out, values, tierSize * sizeof(uint16_t),
-                                          GZ_MAX_LEVEL, MGZ_BLOCK_SIZE);
-    if (out && outSize) {
+    mgz_res_t mgzRes = mgz_parallel_deflate(values, tierSize * sizeof(uint16_t),
+                                            GZ_MAX_LEVEL, MGZ_BLOCK_SIZE, true);
+    if (mgzRes.out) {
         /* In-memory compression succesfully completed, write it to disk. */
         FILE *fp = fopen_tier(tier, "wb", true);
-        fwrite(out, 1, outSize, fp);
+        fwrite(mgzRes.out, 1, mgzRes.size, fp);
         fclose(fp);
-        free(out);
+        free(mgzRes.out);
+
+        /* Write the lookup table. */
+        db_save_tier_write_lookup_table(tier, mgzRes.outBlockSizes, mgzRes.nOutBlocks);
     } else {
         /* OOM occured during compression, fall back to storing raw bytes. */
         printf("db_save_tier: mgz compression failed, storing tier %s "
@@ -274,6 +307,15 @@ static char *get_tier_filename(const char *tier, bool gz) {
     if (gz) strcat(filename, GZ_EXT);
     free(dirname);
     return filename;
+}
+
+static char *get_lookup_filename(const char *tier) {
+    char *filename = get_tier_filename(tier, false);
+    char *lookupFilename = (char *)safe_calloc(ENOUGH_SPACE, sizeof(char));
+    strcat(lookupFilename, filename);
+    strcat(lookupFilename, ".lookup");
+    free(filename);
+    return lookupFilename;
 }
 
 static char *get_stat_filename(const char *tier) {

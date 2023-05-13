@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <malloc.h>
 #include <omp.h>
-#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
 
@@ -14,7 +14,7 @@
 #define ILLEGAL_BLOCK_SIZE SIZE_MAX
 
 static uInt load_input(uint8_t *inBuf, const void *in,
-                       size_t offset, size_t *remSize) {
+                       uint64_t offset, uint64_t *remSize) {
     uInt loadSize = 0;
 
     if (*remSize == 0) return 0;
@@ -26,7 +26,7 @@ static uInt load_input(uint8_t *inBuf, const void *in,
     return loadSize;
 }
 
-static uInt copy_output(void **out, size_t outOffset, size_t *outCapacity,
+static uInt copy_output(void **out, uint64_t outOffset, uint64_t *outCapacity,
                         uint8_t *outBuf, uInt have) {
     if (outOffset + have > *outCapacity) {
         /* Not enough space, reallocate output array. */
@@ -39,8 +39,8 @@ static uInt copy_output(void **out, size_t outOffset, size_t *outCapacity,
     return have;
 }
 
-static size_t copy_block(void **out, size_t outOffset, size_t *outCapacity,
-                         uint8_t *outPart, size_t outPartSize) {
+static uint64_t copy_block(void **out, uint64_t outOffset, uint64_t *outCapacity,
+                           uint8_t *outPart, uint64_t outPartSize) {
     if (outOffset + outPartSize > *outCapacity) {
         /* Not enough space, reallocate output array. */
         do (*outCapacity) *= 2; while (outOffset + outPartSize > *outCapacity);
@@ -52,9 +52,9 @@ static size_t copy_block(void **out, size_t outOffset, size_t *outCapacity,
     return outPartSize;
 }
 
-size_t mgz_deflate(void **out, const void *in, size_t inSize, int level) {
+uint64_t mgz_deflate(void **out, const void *in, uint64_t inSize, int level) {
     int zRet, flush;
-    size_t inOffset = 0, outOffset = 0, outCapacity = DEFAULT_OUT_CAPACITY;
+    uint64_t inOffset = 0, outOffset = 0, outCapacity = DEFAULT_OUT_CAPACITY;
     z_stream strm;
     uint8_t *inBuf = (uint8_t*)malloc(CHUNK_SIZE);
     uint8_t *outBuf = (uint8_t*)malloc(CHUNK_SIZE);
@@ -116,56 +116,70 @@ _bailout:
     return outOffset;
 }
 
-size_t mgz_parallel_deflate(void **out, const void *in, size_t inSize,
-                            int level, size_t blockSize) {
-    if (blockSize == 0) blockSize = DEFAULT_BLOCK_SIZE;
-    else if (blockSize < MIN_BLOCK_SIZE) {
+static uint64_t get_correct_block_size(uint64_t blockSize) {
+    if (blockSize == 0) return DEFAULT_BLOCK_SIZE;
+    if (blockSize < MIN_BLOCK_SIZE) {
         printf("mgz_parallel_deflate: resetting block size %zu to the "
                "minimum required block size %d", blockSize, MIN_BLOCK_SIZE);
-        blockSize = MIN_BLOCK_SIZE;
+        return MIN_BLOCK_SIZE;
     }
-    
+    return blockSize;
+}
+
+mgz_res_t mgz_parallel_deflate(const void *in, uint64_t inSize, int level,
+                               uint64_t blockSize, bool outBlockSizesNeeded) {
+    mgz_res_t ret = {0};
+    blockSize = get_correct_block_size(blockSize);
+    uint64_t nBlocks = (inSize + blockSize - 1) / blockSize; // Round up division.
+    uint64_t outOffset = 0, outCapacity = DEFAULT_OUT_CAPACITY;
+    void *out = malloc(outCapacity);
+
     /* Allocate space for the output of each block. */
-    size_t nBlocks = (inSize + blockSize - 1) / blockSize; // Round up division.
-    size_t outOffset = 0, outCapacity = DEFAULT_OUT_CAPACITY;
-    *out = malloc(outCapacity);
-    void **outParts = (void**)calloc(nBlocks, sizeof(void*));
-    size_t *outPartSizes = (size_t*)malloc(nBlocks * sizeof(size_t));
-    if (!(*out) || !outParts || !outPartSizes) {
+    void **outBlocks = (void**)calloc(nBlocks, sizeof(void*));
+    uint64_t *outBlockSizes = (uint64_t*)malloc(nBlocks * sizeof(uint64_t));
+    if (!out || !outBlocks || !outBlockSizes) {
         printf("mgz_parallel_deflate: malloc failed.\n");
-        free(*out); *out = NULL;
         goto _bailout;
     }
 
     /* Compress each block. */
     bool oom = false;
     #pragma omp parallel for
-    for (size_t i = 0; i < nBlocks; ++i) {
-        size_t thisBlockSize = (i == nBlocks - 1) ?
-                               inSize - i * blockSize : blockSize;
-        outPartSizes[i] = mgz_deflate(&outParts[i], (void*)((uint8_t*)in + i * blockSize),
-                                      thisBlockSize, level);
-        if (outPartSizes[i] == 0) oom = true;
+    for (uint64_t i = 0; i < nBlocks; ++i) {
+        uint64_t thisBlockSize = (i == nBlocks - 1) ?
+                                 inSize - i * blockSize : blockSize;
+        outBlockSizes[i] = mgz_deflate(&outBlocks[i], (void*)((uint8_t*)in + i * blockSize),
+                                       thisBlockSize, level);
+        if (outBlockSizes[i] == 0) oom = true;
     }
     if (oom) goto _bailout;
 
     /* Concatenate blocks to form the final output. */
-    for (size_t i = 0; i < nBlocks; ++i) {
-        size_t copied = copy_block(out, outOffset, &outCapacity,
-                                   outParts[i], outPartSizes[i]);
+    for (uint64_t i = 0; i < nBlocks; ++i) {
+        uint64_t copied = copy_block(&out, outOffset, &outCapacity,
+                                     outBlocks[i], outBlockSizes[i]);
         if (copied == ILLEGAL_BLOCK_SIZE) {
             printf("mgz_parallel_deflate: copy_block realloc failed.\n");
-            free(*out); *out = NULL;
             goto _bailout;
         }
-        assert(copied == outPartSizes[i]);
+        assert(copied == outBlockSizes[i]);
         outOffset += copied;
-        free(outParts[i]); outParts[i] = NULL;
+        free(outBlocks[i]); outBlocks[i] = NULL;
     }
 
+    /* Reach here only if compression was successful. Setup return value. */
+    ret.out = out; out = NULL; // Prevent freeing.
+    ret.size = outOffset;
+    if (outBlockSizesNeeded) {
+        ret.outBlockSizes = outBlockSizes;
+        outBlockSizes = NULL; // Prevent freeing.
+    } // else ret.outBlockSizes is already set to NULL.
+    ret.nOutBlocks = nBlocks;
+
 _bailout:
-    if (outParts) for (size_t i = 0; i < nBlocks; ++i) free(outParts[i]);
-    free(outParts);
-    free(outPartSizes);
-    return outOffset;
+    free(out);
+    if (outBlocks) for (uint64_t i = 0; i < nBlocks; ++i) free(outBlocks[i]);
+    free(outBlocks);
+    free(outBlockSizes);
+    return ret;
 }
