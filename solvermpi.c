@@ -158,8 +158,8 @@ static void move_solvable_head_to_solving(void) {
 }
 
 static double get_elapsed_time(struct timeval start, struct timeval end) {
-    double elapsed_time = (globalEndTime.tv_sec - globalStartTime.tv_sec) * 1000000.0; // convert seconds to microseconds
-    elapsed_time += (globalEndTime.tv_usec - globalStartTime.tv_usec); // add microseconds
+    double elapsed_time = (start.tv_sec - end.tv_sec) * 1000000.0; // convert seconds to microseconds
+    elapsed_time += (start.tv_usec - end.tv_usec); // add microseconds
     elapsed_time /= 1000000.0; // convert back to seconds
     return elapsed_time;
 }
