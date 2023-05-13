@@ -2,12 +2,13 @@
 #SBATCH --job-name=chinesechess
 #SBATCH --account=fc_gamecrafters
 #SBATCH --partition=savio3
-#SBATCH --nodes=5
-#SBATCH --ntasks-per-node=2
-#SBATCH --cpus-per-task=16
-#SBATCH --time=00:05:00
+#SBATCH --nodes=30
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=32
+#SBATCH --time=02:00:00
 
 cd bin
 module load gcc openmpi
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-mpirun ./solve
+# Usage: ./solve <n-pieces> <n-threads> <memory-in-GiB>
+mpirun ./solve 3 32 90

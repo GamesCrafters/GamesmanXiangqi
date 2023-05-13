@@ -727,9 +727,9 @@ uint64_t tier_required_mem(const char *tier) {
         return 0ULL;
     }
     uint64_t mem = safe_add_uint64(
-                safe_mult_uint64(19ULL, size),
-                safe_mult_uint64(16ULL, childSizeTotal)
-                );
+        safe_mult_uint64(19ULL, size),
+        safe_mult_uint64(16ULL, childSizeTotal)
+    );
     if (!mem) {
         return 0ULL;
     }

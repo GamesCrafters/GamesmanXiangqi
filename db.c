@@ -154,7 +154,7 @@ _bailout:
 }
 
 static bool tier_file_is_valid(const char *tier, const uint16_t *values,
-                            uint64_t tierSize) {
+                               uint64_t tierSize) {
     int db_tier_status = db_check_tier(tier);
     if (db_tier_status == DB_TIER_MISSING) return false;
 

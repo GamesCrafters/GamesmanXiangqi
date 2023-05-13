@@ -25,8 +25,9 @@ static TierTreeEntryList *solvingTiers = NULL;
 static int solvedTiers = 0;
 static int skippedTiers = 0;
 static int failedTiers = 0;
-struct timeval start_time, end_time;
-double elapsed_time;
+struct timeval globalStartTime, globalEndTime;
+struct timeval intervalStart, intervalEnd;
+double msgTime = 0.0;
 
 static tier_tree_entry_t *get_tail(TierTreeEntryList *list) {
     if (!list) {
@@ -156,17 +157,38 @@ static void move_solvable_head_to_solving(void) {
     if (!solvableTiersHead) solvableTiersTail = NULL;
 }
 
+static double get_elapsed_time(struct timeval start, struct timeval end) {
+    double elapsed_time = (globalEndTime.tv_sec - globalStartTime.tv_sec) * 1000000.0; // convert seconds to microseconds
+    elapsed_time += (globalEndTime.tv_usec - globalStartTime.tv_usec); // add microseconds
+    elapsed_time /= 1000000.0; // convert back to seconds
+    return elapsed_time;
+}
+
+static void timed_send(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
+    gettimeofday(&intervalStart, NULL);
+    MPI_Send(buf, count, datatype, dest, tag, comm);
+    gettimeofday(&intervalEnd, NULL);
+    msgTime += get_elapsed_time(intervalStart, intervalEnd);
+}
+
+static void timed_recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status) {
+    gettimeofday(&intervalStart, NULL);
+    MPI_Recv(buf, count, datatype, source, tag, comm, status);
+    gettimeofday(&intervalEnd, NULL);
+    msgTime += get_elapsed_time(intervalStart, intervalEnd);
+}
+
 /* Assumes MPI_Init has already been called. */
 void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
     MPI_Status status;
     char buf[MPI_MSG_LEN];
-    gettimeofday(&start_time, NULL); // record start time
+    gettimeofday(&globalStartTime, NULL); // record start time
     solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
     solvableTiersTail = get_tail(solvableTiersHead);
 
     /* Loop until all solvable tiers are solved. */
     while (solvableTiersHead || solvingTiers) {
-        MPI_Recv(buf, MPI_MSG_LEN, MPI_INT8_T, MPI_ANY_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD, &status);
+        timed_recv(buf, MPI_MSG_LEN, MPI_INT8_T, MPI_ANY_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD, &status);
         if (strncmp(buf, "check", MPI_MSG_LEN) != 0) {
             /* Received solver result from a worker node. */
             if (buf[0] != '!') {
@@ -204,11 +226,11 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
     int terminated = 0;
     MPI_Comm_size(MPI_COMM_WORLD, &clusterSize);
     while (terminated < (clusterSize - 1)) { // All nodes except the manager node.
-        MPI_Recv(buf, MPI_MSG_LEN, MPI_INT8_T, MPI_ANY_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD, &status);
+        timed_recv(buf, MPI_MSG_LEN, MPI_INT8_T, MPI_ANY_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD, &status);
         sprintf(buf, "terminate");
         MPI_Send(buf, MPI_MSG_LEN, MPI_INT8_T, status.MPI_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD);
         tier_solver_stat_t stat;
-        MPI_Recv(&stat, sizeof(stat), MPI_INT8_T, status.MPI_SOURCE, MPI_STAT_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        timed_recv(&stat, sizeof(stat), MPI_INT8_T, status.MPI_SOURCE, MPI_STAT_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         update_global_stat(stat);
         ++terminated;
     }
@@ -222,11 +244,9 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
     print_stat(globalStat);
     printf("\n");
 
-    gettimeofday(&end_time, NULL); // record end time
-    elapsed_time = (end_time.tv_sec - start_time.tv_sec) * 1000000.0; // convert seconds to microseconds
-    elapsed_time += (end_time.tv_usec - start_time.tv_usec); // add microseconds
-    elapsed_time /= 1000000.0; // convert back to seconds
-    printf("Elapsed time: %f seconds\n", elapsed_time);
+    gettimeofday(&globalEndTime, NULL); // record end time
+    printf("Elapsed time: %f seconds.\n", get_elapsed_time(globalStartTime, globalEndTime));
+    printf("Time wasted on messaging: %f seconds.\n", msgTime);
 }
 
 /* Assumes MPI_Init has already been called. */

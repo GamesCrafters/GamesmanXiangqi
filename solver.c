@@ -6,13 +6,17 @@
 #include <string.h>
 
 static tier_solver_stat_t globalStat;
+static int nSolvableTiers = 0;
 
 static tier_tree_entry_t *get_tail(TierTreeEntryList *list) {
     if (!list) {
+        nSolvableTiers = 0;
         return NULL;
     }
+    nSolvableTiers = 1;
     while (list->next) {
         list = list->next;
+        ++nSolvableTiers;
     }
     return list;
 }
@@ -66,6 +70,7 @@ static void update_tier_tree(const char *solvedTier, tier_tree_entry_t **solvabl
             (*solvableTiersTail)->next = tmp;
             tmp->next = NULL;
             *solvableTiersTail = tmp;
+            ++nSolvableTiers;
         }
     }
     tier_list_destroy(canonicalParents);
@@ -98,6 +103,8 @@ void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force)
         tmp = solvableTiersHead;
         solvableTiersHead = solvableTiersHead->next;
         free(tmp);
+        --nSolvableTiers;
+        printf("Solvable tiers count: %d\n", nSolvableTiers);
     }
     printf("solve_local: finished solving all tiers with less than or equal to %d pieces:\n"
         "Number of canonical tiers solved: %d\n"
