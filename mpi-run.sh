@@ -2,7 +2,7 @@
 #SBATCH --job-name=chinesechess
 #SBATCH --account=fc_gamecrafters
 #SBATCH --partition=savio3
-#SBATCH --nodes=30
+#SBATCH --nodes=24
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=32
 #SBATCH --time=02:00:00
