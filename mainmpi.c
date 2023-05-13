@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
         solve_mpi_manager(atoi(argv[1]), atoi(argv[2]));
     } else {
         /* Worker node. */
-        solve_mpi_worker(atoi(argv[3]), false);
+        solve_mpi_worker((uint64_t)atoi(argv[3]) << 30, false);
     }
 
     /* Terminates MPI execution environment. */
