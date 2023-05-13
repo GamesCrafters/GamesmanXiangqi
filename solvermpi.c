@@ -218,7 +218,7 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
             /* No solvable tiers available, let the worker node go to sleep. */
             snprintf(buf, MPI_MSG_LEN, "sleep");
         }
-        MPI_Send(buf, MPI_MSG_LEN, MPI_INT8_T, status.MPI_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD);
+        timed_send(buf, MPI_MSG_LEN, MPI_INT8_T, status.MPI_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD);
     }
 
     /* All solvable tiers have been solved. Begin termination. */
@@ -228,7 +228,7 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
     while (terminated < (clusterSize - 1)) { // All nodes except the manager node.
         timed_recv(buf, MPI_MSG_LEN, MPI_INT8_T, MPI_ANY_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD, &status);
         sprintf(buf, "terminate");
-        MPI_Send(buf, MPI_MSG_LEN, MPI_INT8_T, status.MPI_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD);
+        timed_send(buf, MPI_MSG_LEN, MPI_INT8_T, status.MPI_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD);
         tier_solver_stat_t stat;
         timed_recv(&stat, sizeof(stat), MPI_INT8_T, status.MPI_SOURCE, MPI_STAT_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         update_global_stat(stat);
