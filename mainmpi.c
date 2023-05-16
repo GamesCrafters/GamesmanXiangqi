@@ -1,7 +1,22 @@
+#include "solver.h"
 #include "solvermpi.h"
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+void init_multi(char **argv, int processID) {
+    if (processID == 0) {
+        /* Manager node. */
+        solve_mpi_manager(atoi(argv[1]), atoi(argv[2]));
+    } else {
+        /* Worker node. */
+        solve_mpi_worker((uint64_t)atoi(argv[3]) << 30, false);
+    }
+}
+
+void init_single(char **argv) {
+    solve_local(atoi(argv[1]), atoi(argv[2]), (uint64_t)atoi(argv[3]) << 30, false);
+}
 
 int main(int argc, char **argv) {
     if (argc != 4) {
@@ -17,18 +32,15 @@ int main(int argc, char **argv) {
     int processID, clusterSize;
     MPI_Comm_size(MPI_COMM_WORLD, &clusterSize);
     MPI_Comm_rank(MPI_COMM_WORLD, &processID);
-    if (clusterSize <= 1) {
-		printf("main: not enough nodes for MPI.\n");
+
+    if (clusterSize < 1) {
+        printf("main: (fatal) clusterSize is less than 1.\n");
 		MPI_Finalize();
 		return 1;
-	}
-
-    if (processID == 0) {
-        /* Manager node. */
-        solve_mpi_manager(atoi(argv[1]), atoi(argv[2]));
-    } else {
-        /* Worker node. */
-        solve_mpi_worker((uint64_t)atoi(argv[3]) << 30, false);
+    } else if (clusterSize == 1) {
+        init_single(argv);
+	} else {
+        init_multi(argv, processID);
     }
 
     /* Terminates MPI execution environment. */
