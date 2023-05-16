@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=chinesechess
 #SBATCH --account=fc_gamecrafters
-#SBATCH --partition=savio3_htc
+#SBATCH --partition=savio3_bigmem
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=40
+#SBATCH --cpus-per-task=32
 #SBATCH --time=48:00:00
 
 cd bin
