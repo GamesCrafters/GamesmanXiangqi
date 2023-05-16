@@ -1,3 +1,4 @@
+#include "common.h"
 #include "misc.h"
 #include "solver.h"
 #include "tiersolver.h"
@@ -78,6 +79,7 @@ static void update_tier_tree(const char *solvedTier, tier_tree_entry_t **solvabl
 }
 
 void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force) {
+    make_triangle();
     TierTreeEntryList *solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
     tier_tree_entry_t *solvableTiersTail = get_tail(solvableTiersHead);
     tier_tree_entry_t *tmp;
