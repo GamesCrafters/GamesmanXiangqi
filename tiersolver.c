@@ -173,7 +173,12 @@ static bool solve_tier_step_0_initialize(const char *tier, uint64_t mem) {
     /* Zero-initialize solver statistics. */
     init_solver_stat(&stat);
     /* OOM anticipated. */
-    if (!tierRequiredMem || tierRequiredMem > mem) return false;
+    if (!tierRequiredMem || tierRequiredMem > mem) {
+        printf("solve_tier: early termination due to OOM. Expect to "
+               "use %zd bytes of memory, but only %zd bytes are available.\n",
+               tierRequiredMem, mem);
+        return false;
+    }
 
     init_FR(); // If OOM, there is a bug.
     kTier = tier;

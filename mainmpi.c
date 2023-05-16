@@ -15,6 +15,11 @@ void init_multi(char **argv, int processID) {
 }
 
 void init_single(char **argv) {
+    uint8_t nPiecesMax = atoi(argv[1]);
+    uint64_t nthread = atoi(argv[2]);
+    uint64_t mem = ((uint64_t)atoi(argv[3])) << 30;
+    printf("main: solving %d pieces on a single node with %d thread(s) and %d bytes of memory.\n",
+           nPiecesMax, nthread, mem);
     solve_local(atoi(argv[1]), atoi(argv[2]), (uint64_t)atoi(argv[3]) << 30, false);
 }
 
