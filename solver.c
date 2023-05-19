@@ -48,7 +48,8 @@ static void update_global_stat(tier_solver_stat_t stat) {
     }
 }
 
-static void update_tier_tree(const char *solvedTier, tier_tree_entry_t **solvableTiersTail) {
+static void update_tier_tree(const char *solvedTier,
+                             tier_tree_entry_t **solvableTiersTail) {
     tier_tree_entry_t *tmp;
     TierList *parentTiers = tier_get_parent_tier_list(solvedTier);
     TierList *canonicalParents = NULL;
@@ -88,7 +89,8 @@ void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force)
     while (solvableTiersHead) {
         /* Only solve canonical tiers. */
         if (tier_is_canonical_tier(solvableTiersHead->tier)) {
-            tier_solver_stat_t stat = solve_tier(solvableTiersHead->tier, mem, force);
+            tier_solver_stat_t stat = 
+                tiersolver_solve_tier(solvableTiersHead->tier, mem, force);
             if (stat.numLegalPos) {
                 /* Solve succeeded. Update tier tree. */
                 update_tier_tree(solvableTiersHead->tier, &solvableTiersTail);
@@ -98,7 +100,8 @@ void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force)
                 printf("\n");
                 ++solvedTiers;
             } else {
-                printf("Failed to solve tier %s: not enough memory\n", solvableTiersHead->tier);
+                printf("Failed to solve tier %s: not enough memory\n",
+                       solvableTiersHead->tier);
                 ++failedTiers;
             }
         } else ++skippedTiers;
@@ -108,12 +111,57 @@ void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force)
         --nSolvableTiers;
         printf("Solvable tiers count: %d\n", nSolvableTiers);
     }
-    printf("solve_local: finished solving all tiers with less than or equal to %d pieces:\n"
-        "Number of canonical tiers solved: %d\n"
-        "Number of non-canonical tiers skipped: %d\n"
-        "Number of tiers failed due to OOM: %d\n"
-        "Total tiers scanned: %d\n",
-        2 + nPiecesMax, solvedTiers, skippedTiers, failedTiers, solvedTiers + skippedTiers + failedTiers);
+    printf("solve_local: finished solving all tiers "
+           "with less than or equal to %d pieces:\n"
+           "Number of canonical tiers solved: %d\n"
+           "Number of non-canonical tiers skipped: %d\n"
+           "Number of tiers failed due to OOM: %d\n"
+           "Total tiers scanned: %d\n",
+           2 + nPiecesMax,
+           solvedTiers,
+           skippedTiers,
+           failedTiers,
+           solvedTiers + skippedTiers + failedTiers);
     print_stat(globalStat);
     printf("\n");
+}
+
+bool solve_local_single_tier(const char *tier, uint64_t mem) {
+    make_triangle();
+    struct TierListElem *canonical = tier_get_canonical_tier(tier);
+    struct TierArray childTiers = {0};
+    bool ret = false;
+
+    /* Return if the tier has been solved already. */
+    int tierStatus = db_check_tier(canonical->tier);
+    if (tierStatus == DB_TIER_OK) {
+        ret = true;
+        goto _bailout;
+    }
+
+    /* Recursively solve all child tiers. */
+    childTiers = tier_get_child_tier_array(canonical->tier); // If OOM, there is a bug.
+    for (uint8_t i = 0; i < childTiers.size; ++i) {
+        ret = solve_local_single_tier(childTiers.tiers[i], mem);
+        if (!ret) goto _bailout;
+    }
+    tier_array_destroy(&childTiers);
+
+    /* Solve the given tier. */
+    tier_solver_stat_t stat = tiersolver_solve_tier(canonical->tier, mem, false);
+    if (stat.numLegalPos) {
+        /* Solve succeeded. */
+        printf("New tier %s solved:\n", canonical->tier);
+        print_stat(stat);
+        printf("\n");
+        ret = true;
+    } else {
+        printf("Failed to solve tier %s: not enough memory\n", canonical->tier);
+        ret = false;
+    }
+
+_bailout:
+    tier_array_destroy(&childTiers);
+    free(canonical);
+    return ret;
 }

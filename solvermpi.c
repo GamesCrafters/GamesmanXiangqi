@@ -273,7 +273,7 @@ void solve_mpi_worker(uint64_t mem, bool force) {
             /* Assmues the received string contains a valid tier
                that is now ready to be solved. */
             memcpy(tier, buf, TIER_STR_LENGTH_MAX);
-            tier_solver_stat_t stat = solve_tier(tier, mem, force);
+            tier_solver_stat_t stat = tiersolver_solve_tier(tier, mem, force);
             if (stat.numLegalPos) {
                 /* Solve succeeded. Update global statistics. */
                 update_global_stat(stat);

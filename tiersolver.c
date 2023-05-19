@@ -174,7 +174,7 @@ static bool solve_tier_step_0_initialize(const char *tier, uint64_t mem) {
     init_solver_stat(&stat);
     /* OOM anticipated. */
     if (!tierRequiredMem || tierRequiredMem > mem) {
-        printf("solve_tier: early termination due to OOM. Expect to "
+        printf("tiersolver_solve_tier: early termination due to OOM. Expect to "
                "use %zd bytes of memory, but only %zd bytes are available.\n",
                tierRequiredMem, mem);
         return false;
@@ -378,21 +378,22 @@ static void solve_tier_step_7_cleanup(void) {
 }
 
 /**
- * @brief Solves TIER and returns solver statistics.
+ * @brief Solves TIER and returns solver statistics. Assumes all
+ * child tiers have been solved and exist in the database.
  * @param tier: tier to be solved.
  * @param mem: amount of available physical memory in Bytes.
  * @return Solver statistics including number of valid positions,
  * number of winning and losing positions, and the longest distance
  * to a red/black win.
  */
-tier_solver_stat_t solve_tier(const char *tier, uint64_t mem, bool force) {
+tier_solver_stat_t tiersolver_solve_tier(const char *tier, uint64_t mem, bool force) {
     if (force) goto _solve;
     /* If the given TIER is already solved, skip solving and return. */
-    int db_tier_status = db_check_tier(tier);
-    if (db_tier_status == DB_TIER_OK) {
+    int tierStatus = db_check_tier(tier);
+    if (tierStatus == DB_TIER_OK) {
         stat = db_load_stat(tier);
         return stat;
-    } else if (db_tier_status == DB_TIER_STAT_CORRUPTED) {
+    } else if (tierStatus == DB_TIER_STAT_CORRUPTED) {
         // TODO: Fix stat using existing DB file and return stat.
     }
 

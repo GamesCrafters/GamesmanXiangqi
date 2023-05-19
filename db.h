@@ -3,9 +3,11 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define DB_TIER_OK 0
-#define DB_TIER_MISSING 1
-#define DB_TIER_STAT_CORRUPTED 2
+enum db_tier_file_status {
+    DB_TIER_OK = 0,
+    DB_TIER_MISSING,
+    DB_TIER_STAT_CORRUPTED
+};
 
 typedef struct TierSolverStat {
     uint64_t numLegalPos;

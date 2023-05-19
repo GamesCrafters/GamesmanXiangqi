@@ -496,7 +496,8 @@ void tier_list_destroy(TierList *list) {
 
 /**
  * @brief Returns a dynamic array of child tiers of TIER.
- * The array should be freed by the caller of this function.
+ * The array should be freed by the caller of this function
+ * using the tier_array_destroy function.
  */
 struct TierArray tier_get_child_tier_array(const char *tier) {
     struct TierArray array;
@@ -532,6 +533,7 @@ void tier_array_destroy(struct TierArray *array) {
         free(array->tiers[i]);
     }
     free(array->tiers); array->tiers = NULL;
+    free(array->changes); array->changes = NULL;
 }
 
 /**

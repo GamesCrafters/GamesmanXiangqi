@@ -223,8 +223,9 @@ void db_save_stat(const char *tier, const tier_solver_stat_t stat) {
    in the database.
    
    Returns a pointer to a malloc'ed array of size 2*TIERSIZE bytes
-   if no error occurs. Returns NULL if malloc failed. Terminates
-   the program if TIER does not exist in database. */
+   containing the values of tier TIER if no error occurs. Returns
+   NULL if malloc failed. Terminates the program if TIER does not
+   exist in database. */
 uint16_t *db_load_tier(const char *tier, uint64_t tierSize) {
     bool gz = true;
     gzFile gzLoadFile = Z_NULL;

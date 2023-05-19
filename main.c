@@ -1,10 +1,12 @@
+#include <stdio.h>
 #include "solver.h"
-#include "common.h"
-#include "game.h"
-#include "db.h"
 
-int main() {
-    make_triangle();
-    solve_local(2, 1ULL, 2ULL << 30, false);
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        printf("Usage: %s <tier-to-solve>.\n", argv[0]);
+        return 1;
+    }
+
+    solve_local_single_tier(argv[1], 2ULL << 30);
     return 0;
 }

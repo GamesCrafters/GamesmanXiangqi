@@ -4,5 +4,6 @@
 #include <stdint.h>
 
 void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force);
+bool solve_local_single_tier(const char *tier, uint64_t mem);
 
 #endif // SOLVER_H
