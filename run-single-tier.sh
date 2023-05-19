@@ -9,5 +9,5 @@
 
 cd bin
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-# Usage: ./solve <tier-to-solve>
-/usr/bin/time ./solve 000000101011__
+# Usage: ./solve <tier-to-solve> <memory-in-GiB>
+/usr/bin/time ./solve 000000101011__ 380
