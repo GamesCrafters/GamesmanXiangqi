@@ -235,7 +235,7 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
         ++terminated;
     }
 
-    printf("solve_local: finished solving all tiers with less than or equal to %d pieces:\n"
+    printf("solve_mpi_manager: finished solving all tiers with less than or equal to %d pieces:\n"
         "Number of canonical tiers solved: %d\n"
         "Number of non-canonical tiers skipped: %d\n"
         "Number of tiers failed due to OOM: %d\n"
