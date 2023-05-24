@@ -174,14 +174,9 @@ static void timed_recv(void *buf, int count, MPI_Datatype datatype, int source, 
     msgTime += get_elapsed_time(intervalStart, intervalEnd);
 }
 
-/* Assumes MPI_Init has already been called. */
-void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
+static void manager_solve_all(void) {
     MPI_Status status;
     char buf[MPI_MSG_LEN];
-    gettimeofday(&globalStartTime, NULL); // record start time
-    if (nPiecesMax == 255) solvableTiersHead = tier_tree_init_from_file("../endgames");
-    else solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
-    solvableTiersTail = get_tail(solvableTiersHead);
 
     /* Loop until all solvable tiers are solved. */
     while (solvableTiersHead || solvingTiers) {
@@ -190,11 +185,13 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
             /* Received solver result from a worker node. */
             if (buf[0] != '!') {
                 /* Solve succeeded, update tier tree and solvable tier list. */
+                printf("Process %d successfully solved %s.\n", status.MPI_SOURCE, buf);
                 update_tier_tree(buf);
                 remove_tier_from_solving(buf);
                 ++solvedTiers;
             } else {
                 /* Solve failed due to OOM. */
+                printf("Process %d failed to solve %s.\n", status.MPI_SOURCE, buf);
                 remove_tier_from_solving(buf + 1);
                 ++failedTiers;
             }
@@ -209,6 +206,7 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
         }
         if (solvableTiersHead) {
             /* A solvable tier is available, dispatch it to the worker node. */
+            printf("Dispatching %s to process %d.\n", solvableTiersHead->tier, status.MPI_SOURCE);
             memcpy(buf, solvableTiersHead->tier, TIER_STR_LENGTH_MAX);
             move_solvable_head_to_solving();
         } else {
@@ -217,10 +215,14 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
         }
         timed_send(buf, MPI_MSG_LEN, MPI_INT8_T, status.MPI_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD);
     }
+}
 
-    /* All solvable tiers have been solved. Begin termination. */
+static void manager_terminate_workers(void) {
+    MPI_Status status;
+    char buf[MPI_MSG_LEN];
     int clusterSize;
     int terminated = 0;
+
     MPI_Comm_size(MPI_COMM_WORLD, &clusterSize);
     while (terminated < (clusterSize - 1)) { // All nodes except the manager node.
         timed_recv(buf, MPI_MSG_LEN, MPI_INT8_T, MPI_ANY_SOURCE, MPI_MSG_TAG, MPI_COMM_WORLD, &status);
@@ -231,6 +233,17 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
         update_global_stat(stat);
         ++terminated;
     }
+}
+
+/* Assumes MPI_Init has already been called. */
+void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
+    gettimeofday(&globalStartTime, NULL); // record start time
+    if (nPiecesMax == 255) solvableTiersHead = tier_tree_init_from_file("../endgames");
+    else solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
+    solvableTiersTail = get_tail(solvableTiersHead);
+
+    manager_solve_all();
+    manager_terminate_workers();
 
     printf("solve_mpi_manager: finished solving all tiers with less than or equal to %d pieces:\n"
         "Number of canonical tiers solved: %d\n"

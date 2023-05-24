@@ -388,13 +388,11 @@ static void solve_tier_step_7_cleanup(void) {
  */
 tier_solver_stat_t tiersolver_solve_tier(const char *tier, uint64_t mem, bool force) {
     if (force) goto _solve;
-    /* If the given TIER is already solved, skip solving and return. */
     int tierStatus = db_check_tier(tier);
     if (tierStatus == DB_TIER_OK) {
+        /* If the given TIER is already solved, skip solving and return. */
         stat = db_load_stat(tier);
         return stat;
-    } else if (tierStatus == DB_TIER_STAT_CORRUPTED) {
-        // TODO: Fix stat using existing DB file and return stat.
     }
 
     /* Solver main algorithm. */
