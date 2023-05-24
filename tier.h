@@ -26,7 +26,7 @@ struct TierArray {
     struct TierChange *changes;
 };
 
-bool is_legal_tier(const char *tier);
+bool tier_is_legal_tier(const char *tier);
 
 struct TierListElem *tier_get_canonical_tier(const char *tier);
 bool tier_is_canonical_tier(const char *tier);

@@ -61,21 +61,48 @@ static TierList *add_pawn_pbwd_insert(TierList *list, char *tier, int8_t addIdx,
 /**************************** Tier Utilities ****************************/
 
 /**
- * @brief Returns true if TIER is legal, false otherwise. The only illegal tier
- * is when both sides have 5 pawns and they are all on the same row.
+ * @brief Returns true if TIER is legal, false otherwise. 
+ * A legal tier must satisfies the following conditions:
+ * 
+ * 1. Each tier[i] for 0 <= i < 12 must be a digit between '0'
+ * and REM_MAX[i], both inclusive.
+ * 
+ * 2. Character tier[12] must be '_'.
+ * 
+ * 3. Each tier[i] for 13 <= i < 13+numP must be a digit between
+ * '0' and '6', both inclusive.
+ * 
+ * 4. Character tier[13+numP] must be '_'.
+ * 
+ * 5. Each tier[i] for 14+numP <= i < 14+numP+nump must be a digit
+ * between '0' and '6', both inclusive.
+ * 
+ * 6. Character tier[14+numP+nump] must be the null terminator '\0'.
+ * 
+ * 7. If both sides have 5 pawns, they must not be on the same row.
  */
-bool is_legal_tier(const char *tier) {
-    if (tier[RED_P_IDX] != '5' || tier[BLACK_P_IDX] != '5') {
-        return true;
+bool tier_is_legal_tier(const char *tier) {
+    int i, begin, end;
+
+    /* Validate piece configuration. */
+    for (i = 0; i < 12; ++i) {
+        if (tier[i] < '0' || tier[i] > REM_MAX[i]) return false;
     }
+    if (tier[12] != '_') return false;
+    for (int parity = 0; parity < 2; ++parity) {
+        get_pawn_begin_end(tier, RED_P_IDX + parity, &begin, &end);
+        for (i = begin; i < end; ++i) {
+            if (tier[i] < '0' || tier[i] > '6') return false;
+        }
+        if (!parity && tier[i] != '_') return false;
+        if (parity && tier[i] != '\0') return false;
+    }
+
+    /* Validate pawns. */
+    if (tier[RED_P_IDX] != '5' || tier[BLACK_P_IDX] != '5') return true;
     char hold = tier[13];
-    int i;
-    for (i = 14; i < 18; ++i) {
-        if (tier[i] != hold) return true;
-    }
-    for (i = 19; i < 24; ++i) {
-        if (tier[i] != 9 - hold + '0' + '0') return true;
-    }
+    for (i = 14; i < 18; ++i) if (tier[i] != hold) return true;
+    for (i = 19; i < 24; ++i) if (tier[i] != 9 - hold + '0' + '0') return true;
     return false;
 }
 
@@ -317,7 +344,7 @@ TierList *tier_get_child_tier_list(const char *tier) {
         while (tier[i] == tier[i+1]) ++i;
         --tierCpy[i];
         change.pawnRow = tierCpy[i] - '0';
-        if (is_legal_tier(tierCpy)) list = tier_list_insert_head(list, tierCpy, change);
+        if (tier_is_legal_tier(tierCpy)) list = tier_list_insert_head(list, tierCpy, change);
         ++tierCpy[i];
     }
 
@@ -328,7 +355,7 @@ TierList *tier_get_child_tier_list(const char *tier) {
         while (tier[i] == tier[i+1]) ++i;
         --tierCpy[i];
         change.pawnRow = tierCpy[i] - '0';
-        if (is_legal_tier(tierCpy)) list = tier_list_insert_head(list, tierCpy, change);
+        if (tier_is_legal_tier(tierCpy)) list = tier_list_insert_head(list, tierCpy, change);
         ++tierCpy[i];
     }
     return list;
@@ -463,7 +490,7 @@ TierList *tier_get_parent_tier_list(const char *tier) {
     for (i = rbegin; i > rend && tier[i] < '6'; --i) {
         while (tier[i] == tier[i-1]) --i;
         ++tierCpy[i];
-        if (is_legal_tier(tierCpy)) list = tier_list_insert_head(list, tierCpy, change);
+        if (tier_is_legal_tier(tierCpy)) list = tier_list_insert_head(list, tierCpy, change);
         --tierCpy[i];
     }
 
@@ -472,7 +499,7 @@ TierList *tier_get_parent_tier_list(const char *tier) {
     for (i = rbegin; i > rend && tier[i] < '6'; --i) {
         while (tier[i] == tier[i-1]) --i;
         ++tierCpy[i];
-        if (is_legal_tier(tierCpy)) list = tier_list_insert_head(list, tierCpy, change);
+        if (tier_is_legal_tier(tierCpy)) list = tier_list_insert_head(list, tierCpy, change);
         --tierCpy[i];
     }
     return list;
@@ -887,7 +914,7 @@ static TierList *rm_pfwd_insert(TierList *list, char *tier, int8_t pieceIdx,
     --tier[pieceIdx];
     move_pawn_forward(tier, pawnIdx, pawnRow);
     /* Moving a pawn forward may result in an illegal tier. */
-    if (is_legal_tier(tier)) list = tier_list_insert_head(list, tier, change);
+    if (tier_is_legal_tier(tier)) list = tier_list_insert_head(list, tier, change);
     move_pawn_backward(tier, pawnIdx, pawnRow-1);
     ++tier[pieceIdx];
     return list;
@@ -931,7 +958,7 @@ static TierList *add_pawn_insert(TierList *list, char *tier, int8_t idx, int8_t 
 
     add_pawn(tier, idx, row);
     /* Adding a pawn may result in an illegal tier. */
-    if (is_legal_tier(tier)) list = tier_list_insert_head(list, tier, change);
+    if (tier_is_legal_tier(tier)) list = tier_list_insert_head(list, tier, change);
     rm_pawn(tier, idx, row);
     return list;
 }
@@ -947,7 +974,7 @@ static TierList *add_pbwd_insert(TierList *list, char *tier, int8_t pieceIdx,
     ++tier[pieceIdx];
     move_pawn_backward(tier, pawnIdx, pawnRow);
     /* Moving a pawn backward may result in an illegal tier. */
-    if (is_legal_tier(tier)) list = tier_list_insert_head(list, tier, change);
+    if (tier_is_legal_tier(tier)) list = tier_list_insert_head(list, tier, change);
     move_pawn_forward(tier, pawnIdx, pawnRow+1);
     --tier[pieceIdx];
     return list;

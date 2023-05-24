@@ -7,7 +7,16 @@
 #include <string.h>
 
 static tier_solver_stat_t globalStat;
+static int solvedTiers = 0;
+static int skippedTiers = 0;
+static int failedTiers = 0;
 static int nSolvableTiers = 0;
+
+static void initialize_solver(void) {
+    globalStat = (tier_solver_stat_t){0};
+    solvedTiers = skippedTiers = failedTiers = nSolvableTiers = 0;
+    make_triangle();
+}
 
 static tier_tree_entry_t *get_tail(TierTreeEntryList *list) {
     if (!list) {
@@ -79,45 +88,13 @@ static void update_tier_tree(const char *solvedTier,
     tier_list_destroy(parentTiers);
 }
 
-void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force) {
-    make_triangle();
-    TierTreeEntryList *solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
-    tier_tree_entry_t *solvableTiersTail = get_tail(solvableTiersHead);
-    tier_tree_entry_t *tmp;
-    int solvedTiers = 0, skippedTiers = 0, failedTiers = 0;
-
-    while (solvableTiersHead) {
-        /* Only solve canonical tiers. */
-        if (tier_is_canonical_tier(solvableTiersHead->tier)) {
-            tier_solver_stat_t stat = 
-                tiersolver_solve_tier(solvableTiersHead->tier, mem, force);
-            if (stat.numLegalPos) {
-                /* Solve succeeded. Update tier tree. */
-                update_tier_tree(solvableTiersHead->tier, &solvableTiersTail);
-                update_global_stat(stat);
-                printf("Tier %s:\n", solvableTiersHead->tier);
-                print_stat(stat);
-                printf("\n");
-                ++solvedTiers;
-            } else {
-                printf("Failed to solve tier %s: not enough memory\n",
-                       solvableTiersHead->tier);
-                ++failedTiers;
-            }
-        } else ++skippedTiers;
-        tmp = solvableTiersHead;
-        solvableTiersHead = solvableTiersHead->next;
-        free(tmp);
-        --nSolvableTiers;
-        printf("Solvable tiers count: %d\n", nSolvableTiers);
-    }
-    printf("solve_local: finished solving all tiers "
-           "with less than or equal to %d pieces:\n"
+static void print_solver_result(const char *functionName) {
+    printf("%s: finished solving all tiers:\n"
            "Number of canonical tiers solved: %d\n"
            "Number of non-canonical tiers skipped: %d\n"
            "Number of tiers failed due to OOM: %d\n"
            "Total tiers scanned: %d\n",
-           2 + nPiecesMax,
+           functionName,
            solvedTiers,
            skippedTiers,
            failedTiers,
@@ -126,8 +103,46 @@ void solve_local(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force)
     printf("\n");
 }
 
+static void solve_tier_tree(TierTreeEntryList *solvable, uint64_t mem,
+                            bool force, const char *functionName) {
+    tier_tree_entry_t *solvableTail = get_tail(solvable);
+    tier_tree_entry_t *tmp;
+
+    while (solvable) {
+        /* Only solve canonical tiers. */
+        if (tier_is_canonical_tier(solvable->tier)) {
+            tier_solver_stat_t stat = 
+                tiersolver_solve_tier(solvable->tier, mem, force);
+            if (stat.numLegalPos) {
+                /* Solve succeeded. Update tier tree. */
+                update_tier_tree(solvable->tier, &solvableTail);
+                update_global_stat(stat);
+                printf("Tier %s:\n", solvable->tier);
+                print_stat(stat);
+                printf("\n");
+                ++solvedTiers;
+            } else {
+                printf("Failed to solve tier %s: not enough memory\n",
+                       solvable->tier);
+                ++failedTiers;
+            }
+        } else ++skippedTiers;
+        tmp = solvable;
+        solvable = solvable->next;
+        free(tmp);
+        --nSolvableTiers;
+        printf("Solvable tiers count: %d\n", nSolvableTiers);
+    }
+    print_solver_result(functionName);
+}
+
+void solve_local_remaining_pieces(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force) {
+    initialize_solver();
+    solve_tier_tree(tier_tree_init(nPiecesMax, nthread), mem, force, "solve_local_remaining_pieces");
+}
+
 bool solve_local_single_tier(const char *tier, uint64_t mem) {
-    make_triangle();
+    initialize_solver();
     struct TierListElem *canonical = tier_get_canonical_tier(tier);
     struct TierArray childTiers = {0};
     bool ret = false;
@@ -164,4 +179,9 @@ _bailout:
     tier_array_destroy(&childTiers);
     free(canonical);
     return ret;
+}
+
+void solve_local_from_file(const char *filename, uint64_t mem) {
+    initialize_solver();
+    solve_tier_tree(tier_tree_init_from_file(filename), mem, false, "solve_local_from_file");
 }

@@ -20,7 +20,7 @@ void init_single(char **argv) {
     uint64_t mem = ((uint64_t)atoi(argv[3])) << 30;
     printf("main: solving %d pieces on a single node with %zd thread(s) and %zd bytes of memory.\n",
            nPiecesMax, nthread, mem);
-    solve_local(atoi(argv[1]), atoi(argv[2]), (uint64_t)atoi(argv[3]) << 30, false);
+    solve_local_remaining_pieces(atoi(argv[1]), atoi(argv[2]), (uint64_t)atoi(argv[3]) << 30, false);
 }
 
 int main(int argc, char **argv) {

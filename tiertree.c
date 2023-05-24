@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /*************************** Global Constants ***************************/
 /* 3^10 * 6^2 = 2125764 possible sets of remaining pieces on the board. */
@@ -24,15 +25,16 @@ static const uint64_t DEFAULT_BUCKETS[14] = {
 static tier_tree_entry_t **tree = NULL;
 static uint64_t nbuckets = 0ULL;
 static uint64_t nelements = 0ULL;
-static pthread_mutex_t tree_lock;
+static pthread_mutex_t treeLock;
 static pthread_mutex_t solvableLock;
 /************************* End Global Variables *************************/
 
 /********************* Helper Function Declarations *********************/
 static void next_rem(char *tier);
 static uint64_t strhash(const char *str);
-static void tier_tree_add_multithread(const char *tier, uint8_t nChildren);
-static void solvable_list_add(const char *tier, TierTreeEntryList **solvable);
+static void tier_tree_add(const char *tier, uint8_t nChildren, pthread_mutex_t *treeLock);
+static void solvable_list_add(const char *tier, TierTreeEntryList **solvable, pthread_mutex_t *solvableLock);
+static void print_tier_tree_status(TierTreeEntryList *solvable);
 /******************* End Helper Function Declarations *******************/
 
 /******************************* Tier Scanner **********************************/
@@ -46,7 +48,7 @@ static void append_black_pawns(char *tier, void (*func)(const char*)) {
     }
     tier[begin + nump] = '\0';
     while (true) {
-        if (func && is_legal_tier(tier)) func(tier);
+        if (func && tier_is_legal_tier(tier)) func(tier);
         /* Go to next combination. */
         int i = begin;
         ++tier[begin];
@@ -120,9 +122,9 @@ static void append_black_pawns_multithread(char *tier, TierTreeEntryList **solva
         uint8_t numChildren = tier_num_canonical_child_tiers(tier);
 
         /* Add tier to tier tree if it depends on at least one child tier. */
-        if (numChildren) tier_tree_add_multithread(tier, numChildren);
+        if (numChildren) tier_tree_add(tier, numChildren, &treeLock);
         /* Tier is primitive and can be solved immediately. */
-        else solvable_list_add(tier, solvable);
+        else solvable_list_add(tier, solvable, &solvableLock);
 
         /* Go to next combination. */
         int i = begin;
@@ -165,7 +167,7 @@ typedef struct TTBTMHelperArgs {
     int nPiecesMax;
 } ttbtm_helper_args_t;
 
-static void *ttbtm_helper(void *_args) {
+static void *btm_helper(void *_args) {
     ttbtm_helper_args_t *args = (ttbtm_helper_args_t*)_args;
     for (uint64_t i = args->begin; i < args->end; ++i) {
         generate_tiers_multithread(args->tiers[i], args->nPiecesMax, args->solvable);
@@ -174,7 +176,7 @@ static void *ttbtm_helper(void *_args) {
     return NULL;
 }
 
-static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint64_t nthread) {
+static TierTreeEntryList *build_tree_multithread(int nPiecesMax, uint64_t nthread) {
     TierTreeEntryList *solvable = NULL;
     char tier[TIER_STR_LENGTH_MAX] = "000000000000";
     char **tiers = (char**)safe_calloc(N_REMS, sizeof(char*));
@@ -187,7 +189,7 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
     pthread_t *tid = (pthread_t*)safe_calloc(nthread, sizeof(pthread_t*));
     ttbtm_helper_args_t *args = (ttbtm_helper_args_t*)safe_malloc(
                 nthread * sizeof(ttbtm_helper_args_t));
-    pthread_mutex_init(&tree_lock, NULL);
+    pthread_mutex_init(&treeLock, NULL);
     pthread_mutex_init(&solvableLock, NULL);
 
     for (uint64_t i = 0; i < nthread; ++i) {
@@ -196,29 +198,76 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
         args[i].tiers = tiers;
         args[i].nPiecesMax = nPiecesMax;
         args[i].solvable = &solvable;
-        pthread_create(tid + i, NULL, ttbtm_helper, (void*)(args + i));
+        pthread_create(tid + i, NULL, btm_helper, (void*)(args + i));
     }
     for (uint64_t i = 0; i < nthread; ++i) pthread_join(tid[i], NULL);
     free(args);
     free(tid);
     for (uint64_t i = 0; i < N_REMS; ++i) free(tiers[i]);
     free(tiers);
-    pthread_mutex_destroy(&tree_lock);
+    pthread_mutex_destroy(&treeLock);
     pthread_mutex_destroy(&solvableLock);
 
-    printf("tier_tree_build_tree_multithread: tier tree built.\n");
-    printf("total number of buckets: %"PRIu64"\n", nbuckets);
-    printf("total number of elements: %"PRIu64"\n", nelements);
-    printf("solvable tiers: ");
-    TierTreeEntryList *walker;
-    for (walker = solvable; walker; walker = walker->next) {
-        printf("[%s] ", walker->tier);
-    }
-    printf("\n");
+    printf("build_tree_multithread: tier tree built.\n");
+    print_tier_tree_status(solvable);
     return solvable;
 }
 
 /********************** End Tree Builder Multithreaded ***********************/
+
+/************************* File-based Tree Builder ***************************/
+
+static void add_tier_recursive(const char *tier, TierTreeEntryList **solvable) {
+    /* Convert tier to canonical. */
+    struct TierListElem *canonical = tier_get_canonical_tier(tier);
+    if (!canonical) {
+        printf("build_tree_from_file: OOM.\n");
+        exit(1);
+    }
+
+    /* Return if the given tier has already been added. This means all
+       of its child tiers have also been added. */
+    if (tier_tree_find(canonical->tier)) {
+        free(canonical);
+        return;
+    }
+
+    /* Add the given tier to the tier tree. */
+    uint8_t numChildren = tier_num_canonical_child_tiers(canonical->tier);
+    if (numChildren) tier_tree_add(canonical->tier, numChildren, NULL);
+    else solvable_list_add(canonical->tier, solvable, NULL);
+
+    /* Recursively add all of its child tiers. */
+    struct TierArray childTiers = tier_get_child_tier_array(canonical->tier); // If OOM, there is a bug.
+    free(canonical); canonical = NULL;
+    for (uint8_t i = 0; i < childTiers.size; ++i) {
+        add_tier_recursive(childTiers.tiers[i], solvable);
+    }
+    tier_array_destroy(&childTiers);
+}
+
+static TierTreeEntryList *build_tree_from_file(const char *filename) {
+    TierTreeEntryList *solvable = NULL;
+    char tier[TIER_STR_LENGTH_MAX];
+    FILE *f = fopen(filename, "r");
+    if (!f) {
+        printf("tier_tree_init_from_file: failed to open file %s.\n", filename);
+        return NULL;
+    }
+    while (fgets(tier, TIER_STR_LENGTH_MAX, f)) {
+        tier[strlen(tier) - 1] = '\0'; // Get rid of '\n'.
+        if (!tier_is_legal_tier(tier)) {
+            printf("tier_tree_init_from_file: skipping illegal tier %s.\n",
+                   tier);
+            continue;
+        }
+        add_tier_recursive(tier, &solvable);
+    }
+    print_tier_tree_status(solvable);
+    return solvable;
+}
+
+/*********************** End File-based Tree Builder *************************/
 
 /**************************** Tree Utilities *******************************/
 
@@ -228,11 +277,17 @@ static TierTreeEntryList *tier_tree_build_tree_multithread(int nPiecesMax, uint6
  * if tier tree has already been initialized.
  */
 TierTreeEntryList *tier_tree_init(uint8_t nPiecesMax, uint64_t nthread) {
-    TierTreeEntryList *solvable = NULL;
-    if (tree) return solvable;
-    tree = safe_calloc(DEFAULT_BUCKETS[nPiecesMax], sizeof(tier_tree_entry_t*));
+    if (tree) return NULL;
     nbuckets = DEFAULT_BUCKETS[nPiecesMax];
-    return tier_tree_build_tree_multithread(nPiecesMax, nthread);
+    tree = safe_calloc(nbuckets, sizeof(tier_tree_entry_t*));
+    return build_tree_multithread(nPiecesMax, nthread);
+}
+
+TierTreeEntryList *tier_tree_init_from_file(const char *filename) {
+    if (tree) return NULL;
+    nbuckets = DEFAULT_BUCKETS[6]; // Estimated upper bound.
+    tree = safe_calloc(nbuckets, sizeof(tier_tree_entry_t*));
+    return build_tree_from_file(filename);
 }
 
 /**
@@ -270,8 +325,7 @@ tier_tree_entry_t *tier_tree_find(const char *tier) {
 
 /**
  * @brief Removes and returns the tier tree entry corresponding to
- * TIER. Nothing is removed and NULL is returned if the given TIER
- * is not found.
+ * TIER. Returns NULL if the given TIER is not found.
  */
 tier_tree_entry_t *tier_tree_remove(const char *tier) {
     uint64_t slot = strhash(tier) % nbuckets;
@@ -321,25 +375,42 @@ static uint64_t strhash(const char *str) {
  * does not check for existing tiers. Therefore, adding an existing
  * tier again results in undefined behavior.
  */
-static void tier_tree_add_multithread(const char *tier, uint8_t nChildren) {
+static void tier_tree_add(const char *tier, uint8_t nChildren,
+                          pthread_mutex_t *treeLock) {
     uint64_t slot = strhash(tier) % nbuckets;
     tier_tree_entry_t *e = safe_malloc(sizeof(tier_tree_entry_t));
     memcpy(e->tier, tier, TIER_STR_LENGTH_MAX);
     e->numUnsolvedChildren = nChildren;
-    pthread_mutex_lock(&tree_lock);
+    if (treeLock) pthread_mutex_lock(treeLock);
     e->next = tree[slot];
     tree[slot] = e;
     ++nelements;
-    pthread_mutex_unlock(&tree_lock);
+    if (treeLock) pthread_mutex_unlock(treeLock);
 }
 
-static void solvable_list_add(const char *tier, TierTreeEntryList **solvable) {
+static void solvable_list_add(const char *tier, TierTreeEntryList **solvable, pthread_mutex_t *solvableLock) {
+    /* Do not add if the given tier has already been added. */
+    for (tier_tree_entry_t *walker = *solvable; walker; walker = walker->next) {
+        if (!strncmp(tier, walker->tier, TIER_STR_LENGTH_MAX)) return;
+    }
+
     tier_tree_entry_t *e = safe_malloc(sizeof(tier_tree_entry_t));
     memcpy(e->tier, tier, TIER_STR_LENGTH_MAX);
     e->numUnsolvedChildren = 0;
-    pthread_mutex_lock(&solvableLock);
+    if (solvableLock) pthread_mutex_lock(solvableLock);
     e->next = *solvable;
     *solvable = e;
-    pthread_mutex_unlock(&solvableLock);
+    if (solvableLock) pthread_mutex_unlock(solvableLock);
 }
+
+static void print_tier_tree_status(TierTreeEntryList *solvable) {
+    printf("total number of buckets: %"PRIu64"\n", nbuckets);
+    printf("total number of elements: %"PRIu64"\n", nelements);
+    printf("solvable tiers: ");
+    for (TierTreeEntryList *walker = solvable; walker; walker = walker->next) {
+        printf("[%s] ", walker->tier);
+    }
+    printf("\n");
+}
+
 /***************************** End Helper Functions ******************************/

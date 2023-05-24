@@ -30,12 +30,8 @@ struct timeval intervalStart, intervalEnd;
 double msgTime = 0.0;
 
 static tier_tree_entry_t *get_tail(TierTreeEntryList *list) {
-    if (!list) {
-        return NULL;
-    }
-    while (list->next) {
-        list = list->next;
-    }
+    if (!list) return NULL;
+    while (list->next)  list = list->next;
     return list;
 }
 
@@ -183,7 +179,8 @@ void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread) {
     MPI_Status status;
     char buf[MPI_MSG_LEN];
     gettimeofday(&globalStartTime, NULL); // record start time
-    solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
+    if (nPiecesMax == 255) solvableTiersHead = tier_tree_init_from_file("../endgames");
+    else solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
     solvableTiersTail = get_tail(solvableTiersHead);
 
     /* Loop until all solvable tiers are solved. */
