@@ -216,6 +216,9 @@ static bool solve_tier_step_1_1_load_noncanonical_helper(uint8_t childIdx) {
     /* Scan child tier and load winning/losing positions into frontier. */
     #pragma omp parallel for firstprivate(board)
     for (uint64_t hash = 0; hash < childTierSize; ++hash) {
+        /* No need to convert hash if position does not need to be loaded. */
+        if (!values[hash] || values[hash] == DRAW_VALUE) continue;
+
         uint64_t noncanonicalHash = game_get_noncanonical_hash(
             canonicalTier->tier, hash, childTiers.tiers[childIdx], &board);
         loadFRSuccess = check_and_load_frontier(childIdx, noncanonicalHash, values[hash]);
