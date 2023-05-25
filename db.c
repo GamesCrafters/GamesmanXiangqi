@@ -4,6 +4,7 @@
 #include "tier.h"
 #include <assert.h>
 #include <dirent.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
