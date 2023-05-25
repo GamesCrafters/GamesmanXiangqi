@@ -4,6 +4,6 @@
 
 int main(int argc, char *argv[]) {
     make_triangle();
-    tiersolver_test_solve_single_tier("221001000000__0");
+    tiersolver_test_solve_single_tier("202010100010_1_");
     return 0;
 }

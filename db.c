@@ -14,6 +14,9 @@
 #define GZ_EXT ".gz"
 #define GZ_MAX_LEVEL 9
 #define MGZ_BLOCK_SIZE (1 << 20) // 1 MiB.
+#define GZ_READ_CHUNK_SIZE INT_MAX
+#define GZ_SEEK_FORWARD_CHUNK_SIZE LONG_MAX
+#define GZ_SEEK_BACKWARDS_CHUNK_SIZE (LONG_MIN + 1)
 
 /* Important note: gzread returns the number of bytes read, whereas
    fread returns the number of items read. */
@@ -24,6 +27,8 @@ static char *get_dirname(const char *tier);
 static char *get_tier_filename(const char *tier, bool gz);
 static char *get_lookup_filename(const char *tier);
 static char *get_stat_filename(const char *tier);
+static int64_t gzread_helper(gzFile file, voidp buf, uint64_t len);
+static int64_t gzseek_helper(gzFile file, int64_t offset, int whence);
 
 static FILE *fopen_tier(const char *tier, const char *modes, bool gz) {
     char *dirname = get_dirname(tier);
@@ -88,9 +93,14 @@ uint16_t db_get_value(const char *tier, uint64_t hash) {
         exit(1);
     }
     uint16_t res;
-    gzseek(f, hash*sizeof(uint16_t), SEEK_SET);
+    int64_t seekOffset = hash*sizeof(uint16_t);
+    if (gzseek_helper(f, seekOffset, SEEK_SET) != seekOffset) {
+        printf("db_get_value: (fatal) error seeking %"PRId64
+               " bytes into tier %s.\n", seekOffset, tier);
+        exit(1);
+    }
     if (gzread(f, &res, sizeof(res)) != sizeof(res)) {
-        printf("db_get_value: error reading position %"PRIu64
+        printf("db_get_value: (fatal) error reading position %"PRIu64
                " from tier %s.\n", hash, tier);
         exit(1);
     }
@@ -239,25 +249,25 @@ uint16_t *db_load_tier(const char *tier, uint64_t tierSize) {
         gz = false;
         loadfile = fopen_tier(tier, "rb", false);
         if (!loadfile) {
-            printf("load_values_from_disk: (fatal) failed to open tier %s\n", tier);
+            printf("db_load_tier: (fatal) failed to open tier %s\n", tier);
             exit(1);
         }
     }
 
     if (gz) {
         /* Load from gzip. */
-        size_t loadSize = tierSize * sizeof(uint16_t);
-        if (gzread(gzLoadFile, values, loadSize) != loadSize) {
-            printf("load_values_from_disk: (fatal) failed to load all values from "
-                "tier %s\n", tier);
+        uint64_t loadSize = tierSize * sizeof(uint16_t);
+        if (gzread_helper(gzLoadFile, values, loadSize) != (int64_t)loadSize) {
+            printf("db_load_tier: (fatal) failed to load all values from "
+                "tier %s in gzip format.\n", tier);
             exit(1);
         }
         gzclose(gzLoadFile);
     } else {
         /* Load from raw bytes. */
         if (fread(values, sizeof(uint16_t), tierSize, loadfile) != tierSize) {
-            printf("load_values_from_disk: (fatal) failed to load all values from "
-                "tier %s\n", tier);
+            printf("db_load_tier: (fatal) failed to load all values from "
+                "tier %s in raw format.\n", tier);
             exit(1);
         }
         fclose(loadfile);
@@ -326,4 +336,57 @@ static char *get_stat_filename(const char *tier) {
     strcat(statFilename, ".stat");
     free(filename);
     return statFilename;
+}
+
+/* Wrapper function around gzread using 64-bit unsigned integer
+   as read size and 64-bit signed integer as return type to
+   allow the reading of more than INT_MAX bytes. */
+static int64_t gzread_helper(gzFile file, voidp buf, uint64_t len) {
+    int64_t total = 0;
+    int read = 0;
+
+    /* Read INT_MAX bytes at a time. */
+    while (len > (uint64_t)GZ_READ_CHUNK_SIZE) {
+        read = gzread(file, buf, GZ_READ_CHUNK_SIZE);
+        if (read != GZ_READ_CHUNK_SIZE) return (int64_t)read;
+
+        total += read;
+        len -= read;
+        buf = (voidp)((uint8_t*)buf + read);
+    }
+
+    /* Read the rest. */
+    read = gzread(file, buf, (unsigned int)len);
+    if (read != (int)len) return (int64_t)read;
+
+    return total + read;
+}
+
+static int64_t gzseek_helper(gzFile file, int64_t offset, int whence) {
+    int64_t total = 0;
+    off_t sought = 0;
+
+    /* Seek forward LONG_MAX bytes at a time. */
+    while (offset > (int64_t)GZ_SEEK_FORWARD_CHUNK_SIZE) {
+        sought = gzseek(file, GZ_SEEK_FORWARD_CHUNK_SIZE, whence);
+        if (sought != GZ_SEEK_FORWARD_CHUNK_SIZE) return (int64_t)sought;
+
+        total += sought;
+        offset -= sought;
+    }
+    /* Seek backwards (LONG_MIN+1) bytes at a time.
+       +1 to avoid overflow caused by negation. */
+    while (offset < (int64_t)GZ_SEEK_BACKWARDS_CHUNK_SIZE) {
+        sought = gzseek(file, GZ_SEEK_BACKWARDS_CHUNK_SIZE, whence);
+        if (sought != GZ_SEEK_BACKWARDS_CHUNK_SIZE) return (int64_t)sought;
+
+        total += sought;
+        offset -= sought;
+    }
+
+    /* Seek the rest. */
+    sought = gzseek(file, offset, whence);
+    if (sought != (off_t)offset) return (int64_t)sought;
+
+    return total + sought;
 }
