@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread);
+void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem);
 void solve_mpi_worker(uint64_t mem, bool force);
 
 #endif // SOLVERMPI_H

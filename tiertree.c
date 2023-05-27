@@ -246,7 +246,7 @@ static void add_tier_recursive(const char *tier, TierTreeEntryList **solvable) {
     tier_array_destroy(&childTiers);
 }
 
-static TierTreeEntryList *build_tree_from_file(const char *filename) {
+static TierTreeEntryList *build_tree_from_file(const char *filename, uint64_t mem) {
     TierTreeEntryList *solvable = NULL;
     char tier[TIER_STR_LENGTH_MAX];
     FILE *f = fopen(filename, "r");
@@ -256,12 +256,16 @@ static TierTreeEntryList *build_tree_from_file(const char *filename) {
     }
     while (fgets(tier, TIER_STR_LENGTH_MAX, f)) {
         tier[strlen(tier) - 1] = '\0'; // Get rid of '\n'.
+        uint64_t reqMem = tier_required_mem(tier);
         if (!tier_is_legal_tier(tier)) {
             printf("tier_tree_init_from_file: skipping illegal tier %s.\n",
                    tier);
-            continue;
+        } else if (mem && reqMem > mem) {
+            printf("tier_tree_init_from_file: skipping tier %s, which "
+                   "requires %"PRIu64" bytes of memory.\n", tier, reqMem);
+        } else {
+            add_tier_recursive(tier, &solvable);
         }
-        add_tier_recursive(tier, &solvable);
     }
     print_tier_tree_status(solvable);
     return solvable;
@@ -283,11 +287,11 @@ TierTreeEntryList *tier_tree_init(uint8_t nPiecesMax, uint64_t nthread) {
     return build_tree_multithread(nPiecesMax, nthread);
 }
 
-TierTreeEntryList *tier_tree_init_from_file(const char *filename) {
+TierTreeEntryList *tier_tree_init_from_file(const char *filename, uint64_t mem) {
     if (tree) return NULL;
     nbuckets = DEFAULT_BUCKETS[6]; // Estimated upper bound.
     tree = safe_calloc(nbuckets, sizeof(tier_tree_entry_t*));
-    return build_tree_from_file(filename);
+    return build_tree_from_file(filename, mem);
 }
 
 /**

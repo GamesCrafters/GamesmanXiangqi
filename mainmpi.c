@@ -5,12 +5,13 @@
 #include <stdlib.h>
 
 void init_multi(char **argv, int processID) {
+    uint64_t mem = (uint64_t)atoi(argv[3]) << 30;
     if (processID == 0) {
         /* Manager node. */
-        solve_mpi_manager(atoi(argv[1]), atoi(argv[2]));
+        solve_mpi_manager(atoi(argv[1]), atoi(argv[2]), mem);
     } else {
         /* Worker node. */
-        solve_mpi_worker((uint64_t)atoi(argv[3]) << 30, false);
+        solve_mpi_worker(mem, false);
     }
 }
 
@@ -18,9 +19,10 @@ void init_single(char **argv) {
     uint8_t nPiecesMax = atoi(argv[1]);
     uint64_t nthread = atoi(argv[2]);
     uint64_t mem = ((uint64_t)atoi(argv[3])) << 30;
-    printf("main: solving %d pieces on a single node with %zd thread(s) and %zd bytes of memory.\n",
+    printf("main: solving %d pieces on a single node with "
+           "%zd thread(s) and %zd bytes of memory.\n",
            nPiecesMax, nthread, mem);
-    solve_local_remaining_pieces(atoi(argv[1]), atoi(argv[2]), (uint64_t)atoi(argv[3]) << 30, false);
+    solve_local_remaining_pieces(nPiecesMax, nthread, mem, false);
 }
 
 int main(int argc, char **argv) {

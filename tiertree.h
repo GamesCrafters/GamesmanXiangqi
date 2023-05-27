@@ -12,7 +12,7 @@ typedef struct TierTreeEntry {
 typedef tier_tree_entry_t TierTreeEntryList;
 
 TierTreeEntryList *tier_tree_init(uint8_t nPiecesMax, uint64_t nthread);
-TierTreeEntryList *tier_tree_init_from_file(const char *filename);
+TierTreeEntryList *tier_tree_init_from_file(const char *filename, uint64_t mem);
 void tier_tree_destroy(void);
 tier_tree_entry_t *tier_tree_find(const char *tier);
 tier_tree_entry_t *tier_tree_remove(const char *tier);
