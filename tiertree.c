@@ -260,6 +260,10 @@ static TierTreeEntryList *build_tree_from_file(const char *filename, uint64_t me
         if (!tier_is_legal_tier(tier)) {
             printf("tier_tree_init_from_file: skipping illegal tier %s.\n",
                    tier);
+        } else if (reqMem == 0ULL) {
+            printf("tier_tree_init_from_file: skipping tier %s, which "
+                   "requires an amount of memory that cannot be "
+                   "expressed as a 64-bit unsigned integer.\n", tier);
         } else if (mem && reqMem > mem) {
             printf("tier_tree_init_from_file: skipping tier %s, which "
                    "requires %"PRIu64" bytes of memory.\n", tier, reqMem);
