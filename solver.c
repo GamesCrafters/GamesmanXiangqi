@@ -183,5 +183,6 @@ _bailout:
 
 void solve_local_from_file(const char *filename, uint64_t mem) {
     initialize_solver();
-    solve_tier_tree(tier_tree_init_from_file(filename), mem, false, "solve_local_from_file");
+    solve_tier_tree(tier_tree_init_from_file(filename, mem),
+                    mem, false, "solve_local_from_file");
 }
