@@ -239,6 +239,7 @@ static void manager_terminate_workers(void) {
 void solve_mpi_manager(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem) {
     gettimeofday(&globalStartTime, NULL); // record start time
     if (nPiecesMax == 255) {
+        make_triangle();
         solvableTiersHead = tier_tree_init_from_file("../endgames", mem);
     } else {
         solvableTiersHead = tier_tree_init(nPiecesMax, nthread);
