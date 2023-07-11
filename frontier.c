@@ -23,14 +23,13 @@ void frontier_destroy(fr_t *frontier) {
         }
         free(frontier->buckets); frontier->buckets = NULL;
     }
-    if (frontier->capacities) {
-        free(frontier->capacities); frontier->capacities = NULL;
-    }
-    if (frontier->sizes) {
-        free(frontier->sizes); frontier->sizes = NULL;
-    }
-    for (uint16_t i = 0; i < frontier->size; ++i) {
-        omp_destroy_lock(&frontier->locks[i]);
+    free(frontier->capacities); frontier->capacities = NULL;
+    free(frontier->sizes); frontier->sizes = NULL;
+    if (frontier->locks) {
+        for (uint16_t i = 0; i < frontier->size; ++i) {
+            omp_destroy_lock(&frontier->locks[i]);
+        }
+        free(frontier->locks); frontier->locks = NULL;
     }
 }
 
