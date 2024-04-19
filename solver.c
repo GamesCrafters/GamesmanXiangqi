@@ -136,9 +136,83 @@ static void solve_tier_tree(TierTreeEntryList *solvable, uint64_t mem,
     print_solver_result(functionName);
 }
 
+static void aggregate_analysis(analysis_t *dest, const analysis_t *src) {
+    dest->hash_size += src->hash_size;
+    dest->win_count += src->win_count;
+    dest->lose_count += src->lose_count;
+    dest->draw_count += src->draw_count;
+
+    for (int i = 0; i < 512; ++i) {
+        dest->win_summary[i] += src->win_summary[i];
+        dest->lose_summary[i] += src->lose_summary[i];
+    }
+
+    if (dest->largest_win_remoteness < src->largest_win_remoteness) {
+        dest->largest_win_remoteness = src->largest_win_remoteness;
+        strcpy(dest->largest_win_tier, src->largest_win_tier);
+        dest->largest_win_pos = src->largest_win_pos;
+    }
+
+    if (dest->largest_lose_remoteness < src->largest_lose_remoteness) {
+        dest->largest_lose_remoteness = src->largest_lose_remoteness;
+        strcpy(dest->largest_lose_tier, src->largest_lose_tier);
+        dest->largest_lose_pos = src->largest_lose_pos;
+    }
+}
+
+static void print_analysis(analysis_t analysis) {
+    printf("hash size: %"PRIu64"\n", analysis.hash_size);
+    printf("win count: %"PRIu64"\n", analysis.win_count);
+    printf("lose count: %"PRIu64"\n", analysis.lose_count);
+    printf("draw count: %"PRIu64"\n", analysis.draw_count);
+    printf("rmt\twin\tlose\ttotal\n\n\n");
+    for (int i = 0; i < 300; ++i) {
+        printf("%d\t%"PRIu64"\t%"PRIu64"\t%"PRIu64"\n",
+               i, analysis.win_summary[i], analysis.lose_summary[i],
+               analysis.win_summary[i] + analysis.lose_summary[i]);
+    }
+    printf("\n\nlongest win in %d steps from tier [%s] position %"PRIu64"\n", 
+           analysis.largest_win_remoteness, analysis.largest_win_tier,
+           analysis.largest_win_pos);
+    printf("\n\nlongest lose in %d steps from tier [%s] position %"PRIu64"\n", 
+           analysis.largest_lose_remoteness, analysis.largest_lose_tier,
+           analysis.largest_lose_pos);
+}
+
+static void count_tier_tree(TierTreeEntryList *solvable) {
+    tier_tree_entry_t *solvableTail = get_tail(solvable);
+    tier_tree_entry_t *tmp;
+    analysis_t global_analysis;
+    memset(&global_analysis, 0, sizeof(global_analysis));
+
+    while (solvable) {
+        analysis_t analysis;
+        if (tier_is_canonical_tier(solvable->tier)) {
+            analysis = tiersolver_count_tier(solvable->tier, true);
+        } else {
+            struct TierListElem *canonical = tier_get_canonical_tier(solvable->tier);
+            analysis = tiersolver_count_tier(canonical->tier, false);
+            free(canonical);
+        }
+        aggregate_analysis(&global_analysis, &analysis);
+        update_tier_tree(solvable->tier, &solvableTail);
+        printf("Tier %s scanned\n", solvable->tier);
+        tmp = solvable;
+        solvable = solvable->next;
+        free(tmp);
+    }
+    
+    print_analysis(global_analysis);
+}
+
 void solve_local_remaining_pieces(uint8_t nPiecesMax, uint64_t nthread, uint64_t mem, bool force) {
     initialize_solver();
     solve_tier_tree(tier_tree_init(nPiecesMax, nthread), mem, force, "solve_local_remaining_pieces");
+}
+
+void count_local_remaining_pieces(uint8_t nPiecesMax, uint64_t nthread) {
+    initialize_solver();
+    count_tier_tree(tier_tree_init(nPiecesMax, nthread));
 }
 
 bool solve_local_single_tier(const char *tier, uint64_t mem) {
