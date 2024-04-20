@@ -58,13 +58,21 @@ static void update_global_stat(tier_solver_stat_t stat) {
 }
 
 static void update_tier_tree(const char *solvedTier,
-                             tier_tree_entry_t **solvableTiersTail) {
+                             tier_tree_entry_t **solvableTiersTail,
+                             bool canonical_only) {
     tier_tree_entry_t *tmp;
     TierList *parentTiers = tier_get_parent_tier_list(solvedTier);
     TierList *canonicalParents = NULL;
     for (struct TierListElem *walker = parentTiers; walker; walker = walker->next) {
+        struct TierListElem *canonical;
         /* Update canonical parent's number of unsolved children only. */
-        struct TierListElem *canonical = tier_get_canonical_tier(walker->tier);
+        if (canonical_only) {
+            canonical = tier_get_canonical_tier(walker->tier);
+        } else {
+            canonical = (struct TierListElem *)malloc(sizeof(struct TierListElem));
+            strcpy(canonical->tier, walker->tier);
+            canonical->next = NULL;
+        }
         if (tier_list_contains(canonicalParents, canonical->tier)) {
             /* It is possible that a child has two parents that are symmetrical
                to each other. In this case, we should only decrement the child
@@ -115,7 +123,7 @@ static void solve_tier_tree(TierTreeEntryList *solvable, uint64_t mem,
                 tiersolver_solve_tier(solvable->tier, mem, force);
             if (stat.numLegalPos) {
                 /* Solve succeeded. Update tier tree. */
-                update_tier_tree(solvable->tier, &solvableTail);
+                update_tier_tree(solvable->tier, &solvableTail, true);
                 update_global_stat(stat);
                 printf("Tier %s:\n", solvable->tier);
                 print_stat(stat);
@@ -195,7 +203,7 @@ static void count_tier_tree(TierTreeEntryList *solvable) {
             free(canonical);
         }
         aggregate_analysis(&global_analysis, &analysis);
-        update_tier_tree(solvable->tier, &solvableTail);
+        update_tier_tree(solvable->tier, &solvableTail, false);
         printf("Tier %s scanned\n", solvable->tier);
         tmp = solvable;
         solvable = solvable->next;
