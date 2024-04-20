@@ -417,7 +417,6 @@ analysis_t tiersolver_count_tier(const char *tier, bool is_canonical) {
     analysis_t ret;
     memset(&ret, 0, sizeof(ret));
     tierSize = ret.hash_size = tier_size(tier);
-    values = (uint16_t*)calloc(tierSize, sizeof(uint16_t));
     values = db_load_tier(tier, tierSize);
     for (uint64_t i = 0; i < tierSize; ++i) {
         if (values[i] == 0) continue;
