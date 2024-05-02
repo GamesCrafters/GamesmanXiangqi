@@ -34,7 +34,12 @@ int main(int argc, char **argv) {
 
     /* Initialize the MPI environment. All code between MPI_Init
        and MPI_Finalize gets run by all nodes. */
-    MPI_Init(&argc, &argv);
+    int provided;
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+    if (provided != MPI_THREAD_FUNNELED) {
+		printf("Requested MPI_THREAD_FUNNELED, provided %d\n", provided);
+		return 1;
+    }
 
     int processID, clusterSize;
     MPI_Comm_size(MPI_COMM_WORLD, &clusterSize);
